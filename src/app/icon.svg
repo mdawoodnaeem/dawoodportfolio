@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Dawood">
+  <!--
+    FAVICON — "the D with the card in it".
+
+    A monogram that carries the site's own composition rather than a letter on
+    a colour. The counter of the D is not an oval: it is a rounded portrait
+    rectangle, the same shape as the card the hero splits its wordmark around.
+    So the mark reads as a D at 16px and as the site's construction at 180px.
+
+    Geometry is set for small sizes first — 66px stem, 71px walls at 512, which
+    is a hair over 2px at 16px, the point below which a counter fills in and a
+    D turns into a blob. Everything else is tuned around keeping that legible.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12151B"/>
+      <stop offset="1" stop-color="#07080A"/>
+    </linearGradient>
+
+    <!-- Ember bloom, bottom-right, echoing the page's accent light. -->
+    <radialGradient id="bloom" cx="0.78" cy="0.86" r="0.75">
+      <stop offset="0" stop-color="#FF5A1F" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#FF5A1F" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FF5A1F" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- The mark runs light-to-hot across the diagonal, the same direction the
+         section headings ramp. -->
+    <linearGradient id="mark" x1="0.1" y1="0" x2="0.92" y2="1">
+      <stop offset="0" stop-color="#FFC49A"/>
+      <stop offset="0.42" stop-color="#FF7A47"/>
+      <stop offset="1" stop-color="#F04305"/>
+    </linearGradient>
+
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.02"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="115" fill="url(#tile)"/>
+  <rect width="512" height="512" rx="115" fill="url(#bloom)"/>
+
+  <!--
+    The D. Flat left edge with softened corners, a single continuous curve on
+    the right, and the counter punched out by the even-odd rule rather than
+    drawn as a separate shape — one path means one gradient across the whole
+    letterform instead of a seam where two fills meet.
+  -->
+  <path
+    fill="url(#mark)"
+    fill-rule="evenodd"
+    d="M148 120 H244
+       C318 120 378 181 378 256
+       C378 331 318 392 244 392
+       H148
+       A14 14 0 0 1 134 378
+       V134
+       A14 14 0 0 1 148 120
+       Z
+       M230 191 H274
+       A30 30 0 0 1 304 221
+       V291
+       A30 30 0 0 1 274 321
+       H230
+       A30 30 0 0 1 200 291
+       V221
+       A30 30 0 0 1 230 191
+       Z"
+  />
+
+  <!-- Top-edge light, so the tile reads as a physical plate at large sizes.
+       Invisible at 16px, which is the correct place for it to disappear. -->
+  <rect width="512" height="512" rx="115" fill="url(#rim)" style="mix-blend-mode:overlay"/>
+</svg>

@@ -1,0 +1,618 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   1. THEME TOKENS
+   Two complete, independently designed palettes.
+
+   PAPER - warm bone stock, ink-black type, ember accent. Light, airy, printed.
+   INK   - graphite black with a blue undertone, warm bone type. Cinematic.
+
+   They are not inversions of one another: PAPER darkens its accent to stay
+   legible, carries heavier hairlines, finer grain, and expresses elevation
+   with a cast shadow. INK expresses elevation with a lifted surface and a
+   hairline instead, because shadows are invisible on black.
+   ========================================================================== */
+
+:root,
+[data-theme="paper"] {
+  --page: 237 233 224;          /* #EDE9E0 warm bone */
+  --raised: 246 243 236;        /* #F6F3EC lifted stock */
+  --ink: 22 21 16;              /* #161510 warm near-black */
+  --ink-2: 79 76 71;            /* #4F4C47  7.1:1 on page - body copy */
+  --ink-3: 106 102 95;          /* #6A665F  4.7:1 on page - micro labels */
+  --accent: 255 90 31;          /* #FF5A1F vivid ember - fills and graphics */
+  --accent-ink: 184 57 12;      /* #B8390C  5.1:1 - the only accent under 24px */
+  --on-accent: 26 12 6;         /* #1A0C06  6.1:1 on the vivid ember */
+  --signal: 16 102 61;          /* #10663D availability green, 5.8:1 */
+  --line: rgb(22 21 16 / 0.14);
+
+  --grain: 0.028;
+  --shadow-plate: 0 1px 2px rgb(22 21 16 / 0.04), 0 12px 40px -12px rgb(22 21 16 / 0.14);
+  --plate-bg: 255 255 255 / 0.55;
+  color-scheme: light;
+}
+
+[data-theme="ink"] {
+  --page: 8 9 11;               /* #08090B */
+  --raised: 15 17 21;           /* #0F1115 */
+  --ink: 242 240 236;           /* #F2F0EC warm bone, never pure white */
+  --ink-2: 158 158 156;         /* #9E9E9C  7.4:1 on page - body copy */
+  --ink-3: 123 123 121;         /* #7B7B79  4.7:1 on page - micro labels */
+  --accent: 255 106 51;         /* #FF6A33 lifted so it does not vibrate on black */
+  --accent-ink: 255 122 71;     /* #FF7A47  7.2:1 on page */
+  /* Deliberately the same warm near-black in both themes: it is read against
+     the ember fill, not against the page, so it must not flip with the theme.
+     6.7:1 on the ink ember, 6.1:1 on the paper one. */
+  --on-accent: 26 12 6;         /* #1A0C06 */
+  --signal: 95 208 138;         /* #5FD08A */
+  --line: rgb(242 240 236 / 0.12);
+
+  --grain: 0.05;
+  --shadow-plate: 0 1px 0 rgb(242 240 236 / 0.05) inset, 0 24px 60px -20px rgb(0 0 0 / 0.8);
+  --plate-bg: 242 240 236 / 0.035;
+  color-scheme: dark;
+}
+
+:root {
+  --gut: clamp(1.25rem, 4.2vw, 5rem);
+  --nav-h: 4.5rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   2. BASE
+   ========================================================================== */
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Lenis owns scrolling; native smooth scrolling would fight it. */
+  scroll-behavior: auto;
+}
+
+body {
+  background: rgb(var(--page));
+  color: rgb(var(--ink));
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  /* Archivo at 400 reads thin next to an 800 display; 450 holds the page. */
+  font-variation-settings: "wght" 450;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+  /* Covers first paint and browsers without View Transitions (section 9). */
+  transition: background-color 600ms var(--ease-out), color 600ms var(--ease-out);
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.28);
+  color: rgb(var(--ink));
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--accent-ink));
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Anywhere a number needs to hold a column. */
+.nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  /* ==========================================================================
+     3. TYPOGRAPHY PRIMITIVES
+     The display face is Bricolage Grotesque at 800, set in sentence case.
+     Hierarchy comes from scale and space; emphasis comes from colour, because
+     the face carries no italic and a second weight would muddy the voice.
+     ========================================================================== */
+
+  .display {
+    font-family: var(--font-display), system-ui, sans-serif;
+    /* 800, not 700: the extra weight is what gives the face its presence, and
+       the variable axis means it costs nothing extra to load. */
+    font-variation-settings: "wght" 800, "wdth" 100;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  /* Only ever trims the outer edges of a display block. It used to be applied
+     per line, which pulled consecutive lines into each other — with sentence
+     case and real descenders that collided outright. */
+  .display-trim {
+    margin-block: -0.05em;
+  }
+
+  /* Wordmark treatment: the hero's split headline, and nothing else. */
+  .caps {
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    font-variation-settings: "wght" 800, "wdth" 96;
+  }
+
+  /* Emphasis inside a headline. The display face carries no italic, so the
+     second voice is colour rather than a different cut. */
+  .hot {
+    color: rgb(var(--accent));
+  }
+
+  /* ==========================================================================
+     3b. WORDMARK COLOUR
+     The hero splits one wordmark either side of the portrait, and the colour
+     is what welds the halves together: each half ramps from page-ink at the
+     outer edge to full ember at the inner one, so the two gradients converge
+     on the photo. The heat has a subject.
+
+     Both stops are contrast-checked ends of the ramp — ink (15:1 / 17.5:1) and
+     the theme's text-safe ember (4.8:1 / 7.7:1) — so no part of the sweep
+     drops below AA even though it is a gradient.
+     ========================================================================== */
+
+  /* Shared mechanics for every gradient-filled run of type on the site. */
+  .mark,
+  .grad,
+  .grad-scrub {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* A gradient-filled heading must not also try to balance its lines: the
+       clip is measured against the box, and text-wrap: balance changes the box
+       width after the gradient is resolved. */
+    text-wrap: pretty;
+  }
+
+  .mark {
+    background-image: linear-gradient(
+      var(--mark-dir, 90deg),
+      rgb(var(--ink)) 0%,
+      rgb(var(--ink)) 22%,
+      rgb(var(--accent-ink)) 78%,
+      rgb(var(--accent-ink)) 100%
+    );
+    background-size: 100% 100%;
+  }
+
+  /*
+   * HEADINGS
+   * Every section heading ramps from page-ink into ember along the reading
+   * direction, so the end of the phrase is the hottest part of it. That
+   * replaces the single accent word the headings used to carry: the gradient
+   * is doing the emphasis now, and doing it in the same place every time.
+   *
+   * The ramp stops at --accent-ink, not the vivid ember. On bone stock the
+   * vivid ember is 2.6:1, which fails even the large-text bar; accent-ink is
+   * 4.8:1 there and 7.7:1 on graphite, so no part of any heading falls below
+   * AA despite being a gradient.
+   */
+  .grad {
+    background-image: linear-gradient(
+      112deg,
+      rgb(var(--ink)) 0%,
+      rgb(var(--ink)) 34%,
+      rgb(var(--accent-ink)) 88%,
+      rgb(var(--accent-ink)) 100%
+    );
+    background-size: 100% 100%;
+  }
+
+  /*
+   * The one heading whose gradient is scroll-driven: the ember front travels
+   * across the line as the section passes the reading position. This replaced
+   * a per-word opacity scrub — animating opacity on descendants gives each one
+   * its own compositing layer, which breaks the parent's background-clip and
+   * renders the whole line invisible.
+   */
+  .grad-scrub {
+    background-image: linear-gradient(
+      100deg,
+      rgb(var(--accent-ink)) 0%,
+      rgb(var(--accent-ink)) 34%,
+      rgb(var(--ink) / 0.22) 52%,
+      rgb(var(--ink) / 0.22) 100%
+    );
+    background-size: 260% 100%;
+    background-position: 100% 50%;
+  }
+  .mark-l { --mark-dir: 90deg; }
+  .mark-r { --mark-dir: 270deg; }
+
+  /* Below lg the wordmark stacks above the photo, so the gradients should run
+     down the stack instead of pointing at a card that is no longer between
+     them. */
+  @media (max-width: 1023.98px) {
+    .mark-l { --mark-dir: 160deg; }
+    .mark-r { --mark-dir: 20deg; }
+  }
+
+  /* Footer signature: full strength, with a slow ember sweep travelling
+     through it. The gradient is wider than the text so the highlight reads as
+     a moving band rather than a static three-colour fill. */
+  .wordmark {
+    background-image: linear-gradient(
+      100deg,
+      rgb(var(--ink)) 0%,
+      rgb(var(--ink)) 32%,
+      rgb(var(--accent)) 50%,
+      rgb(var(--ink)) 68%,
+      rgb(var(--ink)) 100%
+    );
+    background-size: 260% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: sweep 9s linear infinite;
+  }
+
+  /* Where a genuinely different *shape* is wanted mid-sentence, Archivo's
+     width axis provides it — the same family, pushed wide and heavy. */
+  .wide {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-variation-settings: "wdth" 118, "wght" 800;
+    text-transform: none;
+    letter-spacing: -0.02em;
+  }
+
+  .micro {
+    font-size: 0.6875rem;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-variation-settings: "wght" 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ==========================================================================
+     4. SURFACES
+     ========================================================================== */
+
+  /*
+   * GLASS
+   * One frosted material for every translucent surface on the site — the nav
+   * pill, the project plates, the small floating labels.
+   *
+   * Tuned the way Apple's materials are, rather than the way a CSS blur
+   * usually is: a *moderate* 12px radius with the saturation pushed to 180%.
+   * The heavy 24px blur these surfaces used before turned whatever was behind
+   * them into flat grey mush, which is what makes web glass look cheap. Keeping
+   * the radius mid and boosting saturation instead lets the colour behind stay
+   * legible through the panel, so the surface picks up the backdrop's hue and
+   * reads as a physical sheet rather than as an opacity trick.
+   */
+  .glass {
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+  }
+
+  /* Slightly softer, for surfaces that sit directly over the WebGL field. */
+  .glass-soft {
+    backdrop-filter: blur(8px) saturate(160%);
+    -webkit-backdrop-filter: blur(8px) saturate(160%);
+  }
+
+  /*
+   * Deep frost, for the project plates only.
+   *
+   * Those are the one place a heavy radius earns its keep: they are large,
+   * they sit stacked over each other, and pushing the blur further is what
+   * separates the plate on top from the ones receding behind it. Saturation
+   * goes up alongside the radius rather than being left behind — that is what
+   * keeps the ember and slate of the field reading through the panel instead
+   * of collapsing into grey.
+   */
+  .glass-heavy {
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+  }
+
+  .plate {
+    background: rgb(var(--plate-bg));
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-plate);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+  }
+
+  .rule {
+    height: 1px;
+    background: var(--line);
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 104rem;
+    margin-inline: auto;
+    padding-inline: var(--gut);
+  }
+
+  /* ==========================================================================
+     5. MOTION PRIMITIVES
+     Two mechanics cover the whole site:
+       .mask - a line of type wiped up from behind a clipping edge
+       .rise - a block fading up
+     GSAP only toggles .is-in; CSS owns the movement, so content is still
+     readable if the script never runs.
+     ========================================================================== */
+
+  .mask {
+    overflow: hidden;
+    display: block;
+  }
+  .mask > * {
+    display: block;
+    transform: translate3d(0, 105%, 0);
+    transition: transform 1100ms var(--ease-out);
+    will-change: transform;
+  }
+  .is-in.mask > *,
+  .is-in .mask > * {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .rise {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    transition: opacity 900ms var(--ease-out), transform 900ms var(--ease-out);
+    will-change: transform, opacity;
+  }
+  .is-in.rise,
+  .is-in .rise {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Link rule that wipes in from the left. */
+  .uline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 600ms var(--ease-out);
+  }
+  .uline:hover,
+  .uline:focus-visible {
+    background-size: 100% 1px;
+  }
+
+  /* ==========================================================================
+     5b. THEME-PAIRED IMAGERY
+     The portrait ships as two separate grades - one lit for bone stock, one for
+     graphite - rather than one image tinted by CSS. Both are rendered and the
+     theme decides which is visible, so the swap costs no network request and no
+     decode at switch time.
+     ========================================================================== */
+
+  /* The portrait column dissolves at top and bottom instead of ending on a
+     hard edge. The photo was graded onto a per-theme studio sweep precisely so
+     this fade has something to fade into. */
+  .feather-y {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%, #000 14%, #000 84%, transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%, #000 14%, #000 84%, transparent 100%
+    );
+  }
+
+  .img-ink { opacity: 1; }
+  .img-paper { opacity: 0; }
+  [data-theme="paper"] .img-ink { opacity: 0; }
+  [data-theme="paper"] .img-paper { opacity: 1; }
+
+  /* ==========================================================================
+     LIVING BACKDROP
+     One fixed WebGL layer behind everything. It sits above the flat page
+     colour and below every scrap of content, and never takes a pointer event.
+     ========================================================================== */
+
+  .backdrop-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    contain: strict;
+  }
+
+  /* Content rides above the backdrop. Without this the whole page would be
+     painted underneath it. */
+  .above {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ==========================================================================
+     TRAVELLING PORTRAIT
+     A fixed stage holding a two-faced card. Positions are written straight to
+     the transform by rAF (see ui/Portrait.tsx) — no transition here, because
+     the smoothing is a lerp in JS and a CSS transition on top of it would add
+     a second, slower easing and make the card feel like it is lagging.
+     ========================================================================== */
+
+  .portrait-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    pointer-events: none;
+    perspective: 1600px;
+    will-change: transform, opacity;
+  }
+
+  .portrait-card {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .portrait-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 1.75rem;
+    overflow: hidden;
+    box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.55);
+  }
+
+  .portrait-face--back {
+    transform: rotateY(180deg);
+  }
+
+  /* Scroll cue: a hairline that drains and refills. */
+
+  /* ==========================================================================
+     6. GRAIN
+     One fixed overlay rather than per-section texture, so it never scrolls
+     against the content. Opacity is a theme token: ink needs more of it.
+     ========================================================================== */
+
+  .grain {
+    position: fixed;
+    inset: -50%;
+    z-index: 60;
+    pointer-events: none;
+    background-image: url("/textures/grain.png");
+    background-size: 220px;
+    opacity: var(--grain);
+    mix-blend-mode: overlay;
+    animation: grainshift 8s steps(6) infinite;
+  }
+
+  /* ==========================================================================
+     7. MARQUEE
+     ========================================================================== */
+
+  .marquee {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+  .marquee-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  /* ==========================================================================
+     8. CURSOR
+     Desktop only. mix-blend-mode: difference lets one element read correctly
+     over both themes and over imagery, with no per-section colour logic.
+     ========================================================================== */
+
+  .cursor-dot,
+  .cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 70;
+    pointer-events: none;
+    border-radius: 999px;
+    mix-blend-mode: difference;
+    will-change: transform;
+  }
+  /* Set by the Cursor component once it is running (see Cursor.tsx), so the
+     native arrow is only given up when there is something to replace it. */
+  html.has-cursor,
+  html.has-cursor * {
+    cursor: none;
+  }
+
+  .cursor-dot {
+    width: 6px;
+    height: 6px;
+    background: #fff;
+  }
+  .cursor-ring {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #fff;
+    transition: width 400ms var(--ease-out), height 400ms var(--ease-out),
+      opacity 300ms linear, background-color 400ms var(--ease-out);
+  }
+  @media (pointer: coarse) {
+    .cursor-dot,
+    .cursor-ring {
+      display: none;
+    }
+  }
+}
+
+/* Footer signature: the ember band travelling through the name. */
+@keyframes sweep {
+  from { background-position: 130% 50%; }
+  to   { background-position: -130% 50%; }
+}
+
+@keyframes drain {
+  0%        { transform: translateY(-100%); }
+  60%, 100% { transform: translateY(200%); }
+}
+@keyframes grainshift {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-1.5%, 1%); }
+  40%  { transform: translate(1%, -1.5%); }
+  60%  { transform: translate(-1%, -1%); }
+  80%  { transform: translate(1.5%, 1.5%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ==========================================================================
+   9. THEME TRANSITION
+   View Transitions give a circular wipe originating at the toggle button.
+   Browsers without support fall back to the body colour transition above.
+   ========================================================================== */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+html.theme-switching::view-transition-new(root) {
+  animation: themereveal 720ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+@keyframes themereveal {
+  from { clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%)); }
+  to   { clip-path: circle(150% at var(--tx, 50%) var(--ty, 50%)); }
+}
+
+/* ==========================================================================
+   10. REDUCED MOTION
+   Everything still reveals - it arrives instead of travelling.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .mask > * {
+    transform: none !important;
+  }
+  .rise {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .grain,
+  .wordmark {
+    animation: none;
+  }
+  /* With the sweep stopped, park the signature on its solid-ink stop rather
+     than wherever the animation happened to freeze. */
+  .wordmark {
+    background-position: 100% 50%;
+  }
+}
