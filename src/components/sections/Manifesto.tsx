@@ -74,7 +74,7 @@ export function Manifesto() {
       </div>
 
       {/* The travelling portrait's middle stop, with the argument beside it. */}
-      <div className="mt-[clamp(3rem,7vw,6rem)] grid grid-cols-12 items-center gap-x-10 gap-y-12">
+      <div className="mt-[clamp(3rem,7vw,6rem)] grid grid-cols-12 items-center gap-y-12 lg:gap-x-10">
         <div className="col-span-12 sm:col-span-8 sm:col-start-3 lg:col-span-4 lg:col-start-1">
           <PortraitSlot id="manifesto" />
         </div>

@@ -186,7 +186,7 @@ function Plate({ project: p, i, total }: { project: Project; i: number; total: n
 
         <div
           className={cn(
-            "relative mt-7 grid grid-cols-12 items-center gap-x-10 gap-y-8",
+            "relative mt-7 grid grid-cols-12 items-center gap-y-8 lg:gap-x-10",
             flip && "lg:[direction:rtl] lg:[&>*]:[direction:ltr]"
           )}
         >
@@ -211,7 +211,9 @@ function Plate({ project: p, i, total }: { project: Project; i: number; total: n
               {p.description}
             </p>
 
-            <dl className="mt-7 grid grid-cols-3 gap-4 rounded-tile border border-line px-5 py-4">
+            {/* Three across needs ~80px a column on a phone, which wraps
+                "Secure fintech app" onto three lines. It stacks below sm. */}
+            <dl className="mt-7 grid grid-cols-1 gap-x-4 gap-y-3 rounded-tile border border-line px-5 py-4 sm:grid-cols-3">
               {p.facts.map((f) => (
                 <div key={f.k}>
                   <dt className="micro text-faint">{f.k}</dt>

@@ -124,8 +124,13 @@ export function Playground() {
             className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-700 ease-out"
             style={{ opacity: pushed ? 0 : 1 }}
           >
-            <span className="glass-soft micro rounded-full border border-line bg-page/55 px-4 py-2 text-faint">
-              Drag a shape · click to scatter
+            {/* nowrap, or the pill wraps to two lines and the rounded ends
+                break apart into two overlapping fragments. The label is
+                shortened below sm rather than allowed to run onto a second
+                line inside a shape that cannot hold one. */}
+            <span className="glass-soft micro whitespace-nowrap rounded-full border border-line bg-page/55 px-4 py-2 text-faint">
+              <span className="sm:hidden">Drag · tap to scatter</span>
+              <span className="hidden sm:inline">Drag a shape · click to scatter</span>
             </span>
           </span>
         )}

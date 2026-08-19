@@ -23,7 +23,7 @@ export function About() {
         <SectionHead n="01" label="About" className="mask" />
       </div>
 
-      <div className="mt-12 grid grid-cols-12 items-center gap-x-10 gap-y-14">
+      <div className="mt-12 grid grid-cols-12 items-center gap-y-14 md:gap-x-10">
         {/* Portrait column */}
         <div className="col-span-12 md:order-2 md:col-span-5 md:col-start-8 lg:col-span-4 lg:col-start-9">
           <div ref={frame}>

@@ -54,6 +54,28 @@ const PIECES: PieceDef[] = [
   { kind: "glass", home: [4.4, 0.55, 0.6], scale: 0.62, geometry: "box", spin: [0.28, 0.22, -0.35] },
 ];
 
+/**
+ * The same seven objects, re-hung for a tall frame.
+ *
+ * The landscape arrangement spans about 9 units across. A phone at this
+ * camera distance only sees ~4.5 units of width, so five of the seven sat
+ * off-screen and the three that remained were cropped at the edges — which is
+ * why the section looked broken on mobile rather than sparse.
+ *
+ * This is a re-layout, not a zoom-out: pulling the camera back far enough to
+ * fit the wide cluster would shrink every object to a speck. The pieces are
+ * stacked into a vertical drift instead, which is the shape a portrait
+ * viewport actually has.
+ */
+const PIECES_PORTRAIT: PieceDef[] = PIECES.map((p, i) => ({
+  ...p,
+  home: [
+    [-1.15, 1.2, -1.3, 0.3, -1.35, 1.25, -0.3][i],
+    [2.05, 1.45, 0.15, -0.35, -1.25, -1.8, -2.5][i],
+    [0.1, 1.0, -0.8, 0.7, -0.5, 0.4, 0.5][i],
+  ] as [number, number, number],
+}));
+
 /** Shared mutable state — cheaper than React state for per-frame reads. */
 type Burst = { at: number; origin: THREE.Vector3 } | null;
 
@@ -292,15 +314,23 @@ function Piece({
         <meshPhysicalMaterial
           {...common}
           // Built-in transmission: one shared resolve pass for the scene.
+          //
+          // Phones don't get transmission — but the fallback used to be a flat
+          // 0.25-metalness slab, which rendered as blue-grey plastic and looked
+          // like a bug rather than a choice. Polished pearl with full
+          // iridescence costs nothing extra and reads as a deliberate material:
+          // it still catches the lightformers and still shifts hue as it turns.
           transmission={quality === "high" ? 1 : 0}
           thickness={1.4}
           ior={1.45}
           clearcoat={1}
           clearcoatRoughness={0.1}
-          iridescence={0.7}
-          iridescenceIOR={1.3}
-          color={quality === "high" ? "#ffffff" : "#8fa3b8"}
-          metalness={quality === "high" ? 0 : 0.25}
+          iridescence={quality === "high" ? 0.7 : 1}
+          iridescenceIOR={quality === "high" ? 1.3 : 1.9}
+          iridescenceThicknessRange={[100, 640]}
+          color={quality === "high" ? "#ffffff" : "#eef2f7"}
+          metalness={quality === "high" ? 0 : 0.88}
+          roughness={quality === "high" ? 0.08 : 0.14}
         />
       ) : piece.kind === "metal" ? (
         <meshStandardMaterial {...common} metalness={0.92} roughness={0.24} color="#cfd3d9" />
@@ -325,7 +355,15 @@ function Piece({
  * plastic. A soft gradient plane a few units back is all it takes for the
  * refraction to actually read — and it gives the cluster a room to sit in.
  */
-function Backdrop({ accent, page }: { accent: THREE.Color; page: THREE.Color }) {
+function Backdrop({
+  accent,
+  page,
+  light,
+}: {
+  accent: THREE.Color;
+  page: THREE.Color;
+  light: boolean;
+}) {
   // A soft additive glow. Alpha does the falloff so the disc has no edge.
   const glow = useMemo(() => {
     const c = document.createElement("canvas");
@@ -355,7 +393,13 @@ function Backdrop({ accent, page }: { accent: THREE.Color; page: THREE.Color }) 
         <meshBasicMaterial color={page} toneMapped={false} />
       </mesh>
 
-      {/* Warm pool of light behind the cluster. */}
+      {/* Warm pool of light behind the cluster.
+          Additive blending is right over graphite — it reads as a glow sitting
+          in the dark. Over bone stock it has nowhere to go but up, so it
+          clipped to a pale yellow-white slab with hard edges exactly where the
+          canvas ended, which is what made the whole stage look like a pasted
+          rectangle on light mode. On paper it blends normally at low opacity
+          instead, so the pool tints rather than blows out. */}
       <mesh position={[0, -0.2, -4.6]} scale={[30, 16, 1]}>
         <planeGeometry />
         <meshBasicMaterial
@@ -363,9 +407,9 @@ function Backdrop({ accent, page }: { accent: THREE.Color; page: THREE.Color }) 
           color={accent}
           transparent
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          blending={light ? THREE.NormalBlending : THREE.AdditiveBlending}
           toneMapped={false}
-          opacity={0.85}
+          opacity={light ? 0.16 : 0.85}
         />
       </mesh>
     </group>
@@ -422,11 +466,23 @@ export default function Workshop({
   }, []);
   const group = useRef<THREE.Group>(null);
   const [quality, setQuality] = useState<"high" | "low">("high");
+  const [portrait, setPortrait] = useState(false);
+  const pieces = portrait ? PIECES_PORTRAIT : PIECES;
   const [accent, setAccent] = useState(() => new THREE.Color("#ff5a1f"));
   const [page, setPage] = useState(() => new THREE.Color("#08090b"));
+  const [light, setLight] = useState(false);
 
   // Transmission is the single most expensive thing here; small screens and
   // low core counts get the cheaper material set instead of a dropped frame rate.
+  // Re-hang the cluster whenever the frame is taller than it is wide.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const sync = () => setPortrait(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   useEffect(() => {
     const small = window.matchMedia("(max-width: 900px)").matches;
     const weak = (navigator.hardwareConcurrency ?? 8) <= 4;
@@ -448,6 +504,7 @@ export default function Workshop({
       const p = read("--page");
       if (a) setAccent(a);
       if (p) setPage(p);
+      setLight(document.documentElement.getAttribute("data-theme") === "paper");
     };
     sync();
     const mo = new MutationObserver(sync);
@@ -479,17 +536,26 @@ export default function Workshop({
       {/* A self-contained studio: four soft rect sources the glass and metal
           have something to actually reflect, generated locally. */}
       <Environment resolution={256}>
+        {/* Key, and the two side panels that shape the edges. */}
         <Lightformer form="rect" intensity={2.2} position={[0, 4, 3]} scale={[9, 3, 1]} />
         <Lightformer form="rect" intensity={1.1} position={[-5, 0, 2]} scale={[3, 6, 1]} />
         <Lightformer form="rect" intensity={0.8} position={[5, -1, 1]} scale={[3, 6, 1]} color="#ffb08a" />
         <Lightformer form="ring" intensity={1.4} position={[0, -3, -4]} scale={5} />
+
+        {/* Fill. A polished metal can only show what is around it, and with
+            four small sources the rest of the sphere was empty — which is why
+            the metal pieces read as almost black. These two large, dim panels
+            give them something to reflect from the front and below without
+            flattening the shaping the key lights do. */}
+        <Lightformer form="rect" intensity={0.42} position={[0, 0, 9]} scale={[18, 18, 1]} />
+        <Lightformer form="rect" intensity={0.3} position={[0, -8, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[16, 16, 1]} color="#b8c4d6" />
       </Environment>
 
-      <Backdrop accent={accent} page={page} />
+      <Backdrop accent={accent} page={page} light={light} />
       <Rig group={group} progress={progress} />
 
-      <group ref={group}>
-        {PIECES.map((p, i) => (
+      <group ref={group} scale={portrait ? 0.72 : 1}>
+        {pieces.map((p, i) => (
           <Piece
             key={i}
             piece={p}

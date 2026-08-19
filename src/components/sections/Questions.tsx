@@ -19,7 +19,7 @@ export function Questions() {
 
   return (
     <section id="questions" className="shell scroll-mt-24 py-[clamp(6rem,13vw,11rem)]">
-      <div className="grid grid-cols-12 gap-x-10 gap-y-12">
+      <div className="grid grid-cols-12 gap-y-12 lg:gap-x-10">
         {/* Sticky heading column keeps the section title in view while the
             answers scroll — the list is long enough for that to matter. */}
         <div className="col-span-12 lg:col-span-4">
