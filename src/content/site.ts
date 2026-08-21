@@ -186,8 +186,8 @@ export type Project = {
   role: string;
   year: string;
   description: string;
-  /** Selects the generative visual drawn for this project. */
-  visual: "toolpath" | "lattice" | "ledger";
+  /** Selects the generative visual drawn for this project. No two projects share one. */
+  visual: "toolpath" | "lattice" | "ledger" | "conveyor" | "radar" | "sweep" | "flame";
   /** Short outcome fragments shown as a spec strip under the description. */
   facts: { k: string; v: string }[];
 };
@@ -242,6 +242,74 @@ export const projects: Project[] = [
       { k: "Scope", v: "Secure fintech app" },
       { k: "Sector", v: "Community finance" },
       { k: "Shift", v: "Manual → ledgered" },
+    ],
+  },
+  {
+    n: "04",
+    name: "Nova",
+    href: "https://novaecommerce.vercel.app",
+    domain: "novaecommerce.vercel.app",
+    tag: "Retail → E-Commerce Platform",
+    role: "E-commerce platform build",
+    year: "2026",
+    description:
+      "A minimalist storefront for tech accessories, built around a fast, uncluttered path from product to checkout — nothing competing with the product for attention.",
+    visual: "conveyor",
+    facts: [
+      { k: "Scope", v: "E-commerce storefront" },
+      { k: "Sector", v: "Tech retail" },
+      { k: "Shift", v: "Catalog → checkout" },
+    ],
+  },
+  {
+    n: "05",
+    name: "RoleFit",
+    href: "https://rolefitresumeanalysis.vercel.app",
+    domain: "rolefitresumeanalysis.vercel.app",
+    tag: "Career Tools → AI Analysis Platform",
+    role: "Applied AI product build",
+    year: "2026",
+    description:
+      "An honest resume-tailoring engine that scores a resume against a job description with cited reasoning, rewrites only what it can verify against the original, and tracks every application in one dashboard.",
+    visual: "radar",
+    facts: [
+      { k: "Scope", v: "AI analysis platform" },
+      { k: "Sector", v: "Career tech" },
+      { k: "Shift", v: "Guesswork → grounded score" },
+    ],
+  },
+  {
+    n: "06",
+    name: "Aureole",
+    href: "https://worldsweather.vercel.app",
+    domain: "worldsweather.vercel.app",
+    tag: "Data → Live Forecast Dashboard",
+    role: "Data visualization build",
+    year: "2026",
+    description:
+      "A bento-grid weather dashboard pulling live current, hourly and seven-day forecasts, UV, air quality and wind into one glanceable layout for any city.",
+    visual: "sweep",
+    facts: [
+      { k: "Scope", v: "Weather dashboard" },
+      { k: "Sector", v: "Data visualization" },
+      { k: "Shift", v: "Scattered data → one view" },
+    ],
+  },
+  {
+    n: "07",
+    name: "Aveline",
+    href: "https://avelineresturant.vercel.app",
+    domain: "avelineresturant.vercel.app",
+    tag: "Hospitality → Reservation Experience",
+    role: "Hospitality experience build",
+    year: "2026",
+    description:
+      "A live-fire fine-dining site built around a single nightly seating, carrying the restaurant's atmosphere from the front page straight through to the reservation.",
+    visual: "flame",
+    facts: [
+      { k: "Scope", v: "Restaurant site" },
+      { k: "Sector", v: "Hospitality" },
+      { k: "Shift", v: "Phone bookings → online seating" },
     ],
   },
 ];

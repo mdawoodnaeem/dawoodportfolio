@@ -80,7 +80,7 @@ export function Work() {
           <h2 className="col-span-12 lg:col-span-7">
             <span className="mask display display-trim text-d2">
               <span className="grad">
-                Three businesses,
+                Seven builds,
                 <br />
                 moved onto software.
               </span>
