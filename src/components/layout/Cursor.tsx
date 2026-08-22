@@ -1,48 +1,77 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { gsap } from "@/lib/motion";
+import { gsap, prefersReducedMotion } from "@/lib/motion";
 
 /**
  * CURSOR
  *
- * A dot that tracks the pointer exactly and a ring that trails it with a
- * quickTo lerp — the lag is what makes the pointer feel weighted rather than
- * glued on. Both use mix-blend-mode: difference, so a single white element
- * reads correctly over both themes and over imagery without any per-section
- * colour logic.
+ * The system arrow is never hidden. A small filled dot tracks it exactly,
+ * and a dashed ring trails a little behind with its own quiet, constant
+ * spin — that idle rotation is the signature that makes this read as an
+ * engineered instrument rather than a decoration, and it means the hover
+ * state is a gear shifting up (faster spin, tighter solid ring) rather than
+ * a different object appearing out of nowhere.
  *
- * Anything with [data-cursor] changes the ring: "grow" for links and buttons,
- * "drag" for the 3D scene.
+ * Deliberately never grows into a solid fill and never carries a text
+ * label: both of those made the old version big enough to sit on top of
+ * whatever it was hovering (the nav bar's own links, most visibly), which
+ * is the one thing a cursor should never do. The nav's colour change is
+ * left to carry that signal on its own, same as it always did.
+ *
+ * Visibility is driven by real pointer events rather than a `matchMedia`
+ * check taken once at mount — `(pointer: coarse)` can misreport on the very
+ * first paint on some hybrid touch/mouse devices, which is what made the
+ * cursor occasionally fail to appear until a reload. Reading `e.pointerType`
+ * off every event is authoritative and has no such race. The show/hide state
+ * is also idempotent: leaving the window hides it but does not latch it
+ * hidden — the next real mouse movement always brings it back, where before
+ * a single stray `pointerleave` (switching tabs, a system dialog, the
+ * pointer grazing the very edge of the viewport) could leave it invisible
+ * for the rest of the session.
  */
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (window.matchMedia("(pointer: coarse)").matches) return;
     const d = dot.current;
     const r = ring.current;
     if (!d || !r) return;
 
-    gsap.set([d, r], { xPercent: -50, yPercent: -50, opacity: 0 });
+    const reduced = prefersReducedMotion();
 
-    // Hide the arrow only now — from script, on a fine pointer. Doing it in
-    // the stylesheet would leave a visitor with no cursor at all if the bundle
-    // never loads.
-    document.documentElement.classList.add("has-cursor");
+    gsap.set([d, r], { xPercent: -50, yPercent: -50, opacity: 0 });
 
     const dx = gsap.quickTo(d, "x", { duration: 0.12, ease: "power3" });
     const dy = gsap.quickTo(d, "y", { duration: 0.12, ease: "power3" });
-    const rx = gsap.quickTo(r, "x", { duration: 0.55, ease: "power3" });
-    const ry = gsap.quickTo(r, "y", { duration: 0.55, ease: "power3" });
+    const rx = gsap.quickTo(r, "x", { duration: 0.4, ease: "power3" });
+    const ry = gsap.quickTo(r, "y", { duration: 0.4, ease: "power3" });
 
-    let shown = false;
+    // The idle spin. Composited alongside the x/y quickTo tweens above —
+    // GSAP's transform cache tracks translate and rotate as independent
+    // components on the same element, so this never fights the position
+    // tweens for control of the `transform` property.
+    const spin = reduced ? null : gsap.to(r, { rotate: 360, duration: 9, ease: "none", repeat: -1 });
+
+    let live = false;
+
+    const reveal = () => {
+      if (live) return;
+      live = true;
+      gsap.to([d, r], { opacity: 1, duration: 0.35 });
+    };
+    const conceal = () => {
+      if (!live) return;
+      live = false;
+      gsap.to([d, r], { opacity: 0, duration: 0.25 });
+    };
+
+    const isFine = (e: PointerEvent) => e.pointerType === "mouse" || e.pointerType === "pen";
+
     const move = (e: PointerEvent) => {
-      if (!shown) {
-        shown = true;
-        gsap.to([d, r], { opacity: 1, duration: 0.3 });
-      }
+      if (!isFine(e)) return;
+      reveal();
       dx(e.clientX);
       dy(e.clientY);
       rx(e.clientX);
@@ -50,31 +79,51 @@ export function Cursor() {
     };
 
     const over = (e: PointerEvent) => {
+      if (!isFine(e)) return;
       const hit = (e.target as HTMLElement)?.closest?.(
         "a, button, [data-cursor], input, textarea, summary"
-      ) as HTMLElement | null;
-      const mode = hit?.dataset?.cursor ?? (hit ? "grow" : "");
-      const size = mode === "drag" ? 84 : mode === "grow" ? 62 : 38;
+      );
+      const active = !!hit;
       gsap.to(r, {
-        width: size,
-        height: size,
-        backgroundColor: mode ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0)",
+        width: active ? 50 : 30,
+        height: active ? 50 : 30,
+        backgroundColor: active ? "rgb(var(--accent) / 0.08)" : "rgb(var(--accent) / 0)",
+        borderColor: active ? "rgb(var(--accent) / 0.85)" : "rgb(var(--accent) / 0.45)",
         duration: 0.4,
         ease: "expo.out",
+        onStart: () => (r.style.borderStyle = active ? "solid" : "dashed"),
       });
-      gsap.to(d, { scale: mode ? 0 : 1, duration: 0.3, ease: "expo.out" });
+      spin?.timeScale(active ? 2.6 : 1);
+      gsap.to(d, { scale: active ? 0.4 : 1, duration: 0.3, ease: "expo.out" });
     };
 
-    const leave = () => gsap.to([d, r], { opacity: 0, duration: 0.25 });
+    // A small tactile squeeze-and-release on click — cheap, transform-only,
+    // and it is the one thing that makes a custom cursor feel alive instead
+    // of just decorative.
+    const down = () => {
+      if (!live || reduced) return;
+      gsap.to(r, { scale: 0.86, duration: 0.18, ease: "power3.out" });
+    };
+    const up = () => {
+      if (!live || reduced) return;
+      gsap.to(r, { scale: 1, duration: 0.5, ease: "elastic.out(1, 0.55)" });
+    };
 
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerover", over, { passive: true });
-    document.addEventListener("pointerleave", leave);
+    window.addEventListener("pointerdown", down, { passive: true });
+    window.addEventListener("pointerup", up, { passive: true });
+    document.addEventListener("pointerleave", conceal);
+    window.addEventListener("blur", conceal);
+
     return () => {
-      document.documentElement.classList.remove("has-cursor");
+      spin?.kill();
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerover", over);
-      document.removeEventListener("pointerleave", leave);
+      window.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointerup", up);
+      document.removeEventListener("pointerleave", conceal);
+      window.removeEventListener("blur", conceal);
     };
   }, []);
 

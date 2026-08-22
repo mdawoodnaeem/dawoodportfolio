@@ -48,22 +48,18 @@ export function Work() {
         // Recede as the next plate covers this one. The last card has nothing
         // coming over it, so it never recedes.
         const inner = card.querySelector<HTMLElement>("[data-plate]");
+        const scrim = card.querySelector<HTMLElement>("[data-recede-scrim]");
         if (!inner || prefersReducedMotion() || i === cards.length - 1) return;
-        gsap.fromTo(
-          inner,
-          { scale: 1, filter: "brightness(1)" },
-          {
-            scale: 0.94,
-            filter: "brightness(0.7)",
-            ease: "none",
-            scrollTrigger: {
-              trigger: cards[i + 1],
-              start: "top bottom",
-              end: "top top",
-              scrub: 0.5,
-            },
-          }
-        );
+        const recede = gsap.timeline({
+          scrollTrigger: {
+            trigger: cards[i + 1],
+            start: "top bottom",
+            end: "top top",
+            scrub: 0.5,
+          },
+        });
+        recede.fromTo(inner, { scale: 1 }, { scale: 0.94, ease: "none" }, 0);
+        if (scrim) recede.fromTo(scrim, { opacity: 0 }, { opacity: 0.3, ease: "none" }, 0);
       });
     }, root);
     return () => ctx.revert();
@@ -175,6 +171,16 @@ function Plate({ project: p, i, total }: { project: Project; i: number; total: n
             background:
               "radial-gradient(90% 70% at 70% 0%, rgb(var(--accent) / 0.10), transparent 65%)",
           }}
+        />
+        {/* Darkens as the next plate covers this one — an opacity fade, not a
+            filter. Animating `filter` forces the browser to repaint this
+            (already-blurred) panel on the main thread every scroll frame;
+            layering a plain black scrim underneath keeps the same "receding
+            into shadow" read while staying on the compositor. */}
+        <span
+          data-recede-scrim
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] bg-black opacity-0"
         />
 
         <div className="relative flex items-center justify-between gap-6 border-b border-line pb-5">

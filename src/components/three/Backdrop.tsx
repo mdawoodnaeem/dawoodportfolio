@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { BACKDROPS } from "@/content/backdrops";
@@ -313,22 +313,41 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
 
 export default function Backdrop() {
   const mouse = useRef({ x: 0, y: 0 });
+  const [enabled, setEnabled] = useState(false);
+  // Capped lower on small/coarse-pointer screens — same shader, same look,
+  // just fewer physical pixels behind it. A phone's backing store at dpr
+  // 2–3 pushes several times the fragment-shader work of a desktop tab at
+  // the same CSS size, and the field is smooth by nature so it loses
+  // nothing visible at a lower pixel ratio.
+  const [maxDpr, setMaxDpr] = useState(1.35);
 
   useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setEnabled(!reduced);
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    setMaxDpr(coarse || window.innerWidth < 768 ? 1 : 1.35);
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
     const move = (e: PointerEvent) => {
       mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.current.y = -((e.clientY / window.innerHeight) * 2 - 1);
     };
     window.addEventListener("pointermove", move, { passive: true });
     return () => window.removeEventListener("pointermove", move);
-  }, []);
+  }, [enabled]);
+
+  // Reduced motion: no shader, no per-frame GPU/JS dispatch at all — just the
+  // flat page colour underneath, same as before the canvas has ever mounted.
+  if (!enabled) return null;
 
   return (
     <div className="backdrop-layer" aria-hidden="true">
       <Canvas
         // The field is smooth by nature, so it survives a low pixel ratio far
         // better than geometry would — and this runs on every single section.
-        dpr={[1, 1.35]}
+        dpr={[1, maxDpr]}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ width: "100%", height: "100%" }}
       >

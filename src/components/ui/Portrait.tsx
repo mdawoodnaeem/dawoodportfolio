@@ -83,9 +83,10 @@ export function PortraitSlot({ id, className = "" }: { id: SlotId; className?: s
     >
       {/* Below lg the flying card is switched off — a card crossing a narrow
           screen fights the copy for space — so each slot renders its own
-          static face in place instead. */}
+          static face in place instead. Only the hero copy is above the fold,
+          so only it gets to jump the image queue. */}
       <div className="h-full lg:hidden">
-        <Card face={id === "manifesto" ? "screen" : "photo"} />
+        <Card face={id === "manifesto" ? "screen" : "photo"} priority={id === "hero"} />
       </div>
     </div>
   );
@@ -95,7 +96,7 @@ export function PortraitSlot({ id, className = "" }: { id: SlotId; className?: s
 /*  Faces                                                                      */
 /* -------------------------------------------------------------------------- */
 
-function PhotoFace() {
+function PhotoFace({ priority = false }: { priority?: boolean }) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-panel">
       {/* Both grades ship; CSS picks one per theme, so neither mode is ever
@@ -104,7 +105,8 @@ function PhotoFace() {
         src="/img/portrait-ink.jpg"
         alt={`${profile.name}, ${profile.role}`}
         fill
-        priority
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
         sizes="(max-width: 1024px) 76vw, 24rem"
         className="img-ink object-cover object-[50%_16%] transition-opacity duration-500"
       />
@@ -113,7 +115,8 @@ function PhotoFace() {
         alt=""
         aria-hidden="true"
         fill
-        priority
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
         sizes="(max-width: 1024px) 76vw, 24rem"
         className="img-paper object-cover object-[50%_16%] transition-opacity duration-500"
       />
@@ -201,10 +204,10 @@ function ScreenFace() {
   );
 }
 
-function Card({ face }: { face: "photo" | "screen" }) {
+function Card({ face, priority = false }: { face: "photo" | "screen"; priority?: boolean }) {
   return (
     <div className="relative h-full w-full">
-      {face === "photo" ? <PhotoFace /> : <ScreenFace />}
+      {face === "photo" ? <PhotoFace priority={priority} /> : <ScreenFace />}
     </div>
   );
 }
@@ -373,7 +376,7 @@ export function PortraitStage() {
     >
       <div ref={card} className="portrait-card">
         <div className="portrait-face">
-          <PhotoFace />
+          <PhotoFace priority />
         </div>
         <div className="portrait-face portrait-face--back">
           <ScreenFace />

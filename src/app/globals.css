@@ -484,6 +484,7 @@ body {
     opacity: var(--grain);
     mix-blend-mode: overlay;
     animation: grainshift 8s steps(6) infinite;
+    will-change: transform;
   }
 
   /* ==========================================================================
@@ -502,8 +503,11 @@ body {
 
   /* ==========================================================================
      8. CURSOR
-     Desktop only. mix-blend-mode: difference lets one element read correctly
-     over both themes and over imagery, with no per-section colour logic.
+     Desktop only. The system arrow is never hidden — a small filled dot plus
+     a slow-spinning dashed ring ride alongside it. The dashed ring is the
+     signature: it idles as a loose, quietly turning reticle and tightens
+     into a solid, faster-spinning one the instant something is hoverable —
+     never a solid shape big enough to sit over content, never text.
      ========================================================================== */
 
   .cursor-dot,
@@ -514,28 +518,22 @@ body {
     z-index: 70;
     pointer-events: none;
     border-radius: 999px;
-    mix-blend-mode: difference;
     will-change: transform;
-  }
-  /* Set by the Cursor component once it is running (see Cursor.tsx), so the
-     native arrow is only given up when there is something to replace it. */
-  html.has-cursor,
-  html.has-cursor * {
-    cursor: none;
   }
 
   .cursor-dot {
-    width: 6px;
-    height: 6px;
-    background: #fff;
+    width: 5px;
+    height: 5px;
+    background: rgb(var(--accent));
   }
+
   .cursor-ring {
-    width: 38px;
-    height: 38px;
-    border: 1px solid #fff;
-    transition: width 400ms var(--ease-out), height 400ms var(--ease-out),
-      opacity 300ms linear, background-color 400ms var(--ease-out);
+    width: 30px;
+    height: 30px;
+    border: 1.5px dashed rgb(var(--accent) / 0.45);
+    background: rgb(var(--accent) / 0);
   }
+
   @media (pointer: coarse) {
     .cursor-dot,
     .cursor-ring {
