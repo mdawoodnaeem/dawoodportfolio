@@ -37,7 +37,7 @@ export function Questions() {
               </span>
             </h2>
             <p className="rise mt-6 max-w-sm text-[0.95rem] leading-relaxed text-muted" data-reveal>
-              Anything not covered here, ask directly —{" "}
+              Anything not covered here, ask directly at{" "}
               <a href={`mailto:${profile.email}`} className="uline text-ink">
                 {profile.email}
               </a>

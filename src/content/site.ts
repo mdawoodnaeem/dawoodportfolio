@@ -27,10 +27,10 @@ export const profile = {
   headlineAccent: "run",
 
   intro:
-    "I build the software businesses actually operate on — production back-ends, spatial WebGL interfaces, and autonomous AI agents, treated as one discipline instead of three.",
+    "I build the software businesses actually operate on: production back-ends, spatial WebGL interfaces, and autonomous AI agents, treated as one discipline instead of three.",
 
   about: [
-    "I'm Dawood — a full-stack and 3D web developer, agentic AI engineer, and independent tech freelancer based in Daska, Punjab, Pakistan.",
+    "I'm Dawood, a full-stack and 3D web developer, agentic AI engineer, and independent tech freelancer based in Daska, Punjab, Pakistan.",
     "Two years in, I've settled into the intersection most developers avoid: production-grade back-ends, spatial WebGL interfaces, and autonomous AI systems, built as one coherent discipline rather than three separate skillsets.",
     "I take a project from a blank repository to a client who trusts it enough to run their business on it.",
   ],
@@ -42,7 +42,7 @@ export const profile = {
   ],
 
   /**
-   * Placeholder destinations carried over from the previous site — swap in the
+   * Placeholder destinations carried over from the previous site, swap in the
    * real profile URLs before launch.
    */
   socials: [
@@ -55,7 +55,7 @@ export const profile = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Manifesto — the three principles, used as the statement section            */
+/*  Manifesto: the three principles, used as the statement section             */
 /* -------------------------------------------------------------------------- */
 
 export const manifesto = {
@@ -64,15 +64,15 @@ export const manifesto = {
     "I build things that are used.",
   ],
   body: [
-    "In a market full of templates, the rare thing is a system that holds up — under real traffic, real data, and a client who has to run their business on it on a Tuesday morning.",
+    "In a market full of templates, the rare thing is a system that holds up under real traffic, real data, and a client who has to run their business on it on a Tuesday morning.",
     "Most of what gets shipped looks finished and behaves like a demo. It photographs well, it wins the pitch, and then the first hundred real users find the edges nobody scoped: the form that loses data on a flaky connection, the dashboard that takes nine seconds on a mid-range phone, the integration that quietly stops syncing at 2am.",
-    "I build for the Tuesday morning, not the launch day. That means the boring parts get the same attention as the visible ones — schemas designed before screens, error states written before the happy path, and performance treated as a budget rather than a wish.",
+    "I build for the Tuesday morning, not the launch day. That means the boring parts get the same attention as the visible ones. Schemas get designed before screens, error states get written before the happy path, and performance gets treated as a budget rather than a wish.",
   ],
   principles: [
     {
       n: "01",
       title: "Structure is information",
-      body: "How a system is organised should tell you how it thinks. Numbering, naming and layout aren't decoration — they're documentation that can't go stale.",
+      body: "How a system is organised should tell you how it thinks. Numbering, naming and layout aren't decoration, they're documentation that can't go stale.",
     },
     {
       n: "02",
@@ -82,13 +82,13 @@ export const manifesto = {
     {
       n: "03",
       title: "One canvas, not five",
-      body: "A single continuously choreographed layer beats five that pop in and out. Continuity isn't a flourish — it's the thing that makes an interface feel real.",
+      body: "A single continuously choreographed layer beats five that pop in and out. Continuity isn't a flourish, it's the thing that makes an interface feel real.",
     },
   ],
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Capabilities — the five service pillars                                    */
+/*  Capabilities: the five service pillars                                     */
 /* -------------------------------------------------------------------------- */
 
 export type Capability = {
@@ -107,7 +107,7 @@ export const capabilities: Capability[] = [
     title: "Web & 3D Development",
     short: "Web & 3D",
     summary:
-      "Advanced web applications and immersive, physics-informed 3D layouts — sites that move like software, not like slideshows.",
+      "Advanced web applications and immersive, physics-informed 3D layouts: sites that move like software, not like slideshows.",
     items: [
       "Next.js / React production builds",
       "WebGL & Three.js spatial interfaces",
@@ -121,7 +121,7 @@ export const capabilities: Capability[] = [
     title: "Agentic AI Engineering",
     short: "Agentic AI",
     summary:
-      "Autonomous agents and intelligent systems built into the product itself — not a chat widget bolted onto the side of it.",
+      "Autonomous agents and intelligent systems built into the product itself, not a chat widget bolted onto the side of it.",
     items: [
       "Agent orchestration & tool use",
       "LLM integration at production scale",
@@ -149,7 +149,7 @@ export const capabilities: Capability[] = [
     title: "Full-Stack Systems",
     short: "Full-Stack",
     summary:
-      "Complete software lifecycles — databases, APIs, and the architecture that holds them together under load.",
+      "Complete software lifecycles: databases, APIs, and the architecture that holds them together under load.",
     items: [
       "Database & schema architecture",
       "API design and integration",
@@ -163,7 +163,7 @@ export const capabilities: Capability[] = [
     title: "Independent Engagements",
     short: "Freelance",
     summary:
-      "Complex algorithmic problems solved for enterprise and global clients — focused scopes, direct communication, no agency layer.",
+      "Complex algorithmic problems solved for enterprise and global clients, with focused scopes, direct communication, and no agency layer.",
     items: [
       "Algorithmic problem-solving",
       "0 → 1 builds for clients worldwide",
@@ -202,7 +202,7 @@ export const projects: Project[] = [
     role: "Major agency engineering contract",
     year: "2025",
     description:
-      "Translated a traditional, offline manufacturing workflow into an ultra-premium, high-conversion online platform — moving an entire trade that ran on phone calls and paper onto the web.",
+      "Translated a traditional, offline manufacturing workflow into an ultra-premium, high-conversion online platform, moving an entire trade that ran on phone calls and paper onto the web.",
     visual: "toolpath",
     facts: [
       { k: "Scope", v: "Full-stack platform" },
@@ -253,7 +253,7 @@ export const projects: Project[] = [
     role: "E-commerce platform build",
     year: "2026",
     description:
-      "A minimalist storefront for tech accessories, built around a fast, uncluttered path from product to checkout — nothing competing with the product for attention.",
+      "A minimalist storefront for tech accessories, built around a fast, uncluttered path from product to checkout, with nothing competing with the product for attention.",
     visual: "conveyor",
     facts: [
       { k: "Scope", v: "E-commerce storefront" },
@@ -315,7 +315,7 @@ export const projects: Project[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Pricing — figures carried over as-is                                       */
+/*  Pricing: figures carried over as-is                                        */
 /* -------------------------------------------------------------------------- */
 
 export type Tier = {
@@ -412,15 +412,15 @@ export const testimonials = [
 export const faqs = [
   {
     q: "What kind of projects do you take on?",
-    a: "Full-stack web platforms, 3D/WebGL sites, mobile apps and agentic AI systems — from a 0 → 1 build to embedding as a senior technical partner on an existing product.",
+    a: "Full-stack web platforms, 3D/WebGL sites, mobile apps and agentic AI systems, from a 0 to 1 build to embedding as a senior technical partner on an existing product.",
   },
   {
     q: "Do you work with international clients?",
-    a: "Yes. I'm based in Daska, Punjab, Pakistan and work remotely with clients worldwide. Communication happens directly over email or WhatsApp — there's no account-manager layer in between.",
+    a: "Yes. I'm based in Daska, Punjab, Pakistan and work remotely with clients worldwide. Communication happens directly over email or WhatsApp, with no account-manager layer in between.",
   },
   {
     q: "How do we start working together?",
-    a: "Send a short brief of what you're building over email or WhatsApp. You'll get scope, timeline and next steps back — usually within a day.",
+    a: "Send a short brief of what you're building over email or WhatsApp. You'll get scope, timeline and next steps back, usually within a day.",
   },
   {
     q: "Do you offer ongoing support after launch?",
@@ -433,7 +433,7 @@ export const faqs = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Navigation — drives the nav, the section counter and the progress rail     */
+/*  Navigation: drives the nav, the section counter and the progress rail      */
 /* -------------------------------------------------------------------------- */
 
 export const sections = [

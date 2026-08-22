@@ -115,9 +115,29 @@ export function Nav() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="menu-sheet"
-            className="relative z-10 flex h-10 items-center rounded-full px-3 md:hidden"
+            aria-label={open ? "Close menu" : "Open menu"}
+            className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full md:hidden"
           >
-            <span className="micro">{open ? "Close" : "Menu"}</span>
+            <span className="relative flex h-4 w-5 flex-col justify-between">
+              <span
+                className={cn(
+                  "block h-[1.5px] w-full origin-center rounded-full bg-ink transition-transform duration-300 ease-out",
+                  open && "translate-y-[7px] rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-[1.5px] w-full rounded-full bg-ink transition-opacity duration-200 ease-out",
+                  open && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-[1.5px] w-full origin-center rounded-full bg-ink transition-transform duration-300 ease-out",
+                  open && "-translate-y-[7px] -rotate-45"
+                )}
+              />
+            </span>
           </button>
         </nav>
       </header>

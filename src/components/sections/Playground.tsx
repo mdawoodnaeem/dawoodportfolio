@@ -100,7 +100,7 @@ export function Playground() {
           <p className="rise col-span-12 text-lead text-muted lg:col-span-4 lg:col-start-9">
             {reduced
               ? "An interactive arrangement of glass, metal and ember. Paused, because your system asks for reduced motion."
-              : "Grab any of them and throw it — the rest get out of the way. Click empty space to scatter the lot. Nothing here breaks; it all comes back."}
+              : "Grab any of them and throw it, the rest get out of the way. Click empty space to scatter the lot. Nothing here breaks; it all comes back."}
           </p>
         </div>
       </div>

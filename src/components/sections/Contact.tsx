@@ -152,11 +152,11 @@ export function Contact() {
 
             <p className="rise mt-8 max-w-[34rem] text-lead text-muted">
               Open to focused engagements across full-stack, mobile, agentic AI and 3D web.
-              Send a short brief — you&apos;ll get scope, timeline and next steps back, usually
+              Send a short brief, you&apos;ll get scope, timeline and next steps back, usually
               within a day.
             </p>
 
-            <div className="rise mt-10 flex flex-wrap items-center gap-4">
+            <div className="rise mt-10 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
               <Magnetic as="a" href={`mailto:${profile.email}`} data-cursor="grow">
                 <MailGlyph />
                 {profile.email}
@@ -169,7 +169,7 @@ export function Contact() {
                 data-cursor="grow"
                 className="group/wa border-line text-muted hover:border-[#25D366] hover:text-[#25D366]"
               >
-                {/* A quiet, always-on pulse behind the glyph — enough to read
+                {/* A quiet, always-on pulse behind the glyph, enough to read
                     as "live and reachable" without shouting over the CTA
                     beside it. It only brightens on hover/focus. */}
                 <span className="relative flex h-4 w-4 items-center justify-center text-[#25D366]">
@@ -212,7 +212,12 @@ export function Contact() {
               </div>
             </dl>
 
-            <ul className="rise mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex items-center justify-center gap-3 lg:justify-start">
+              <span className="micro text-faint">Find me elsewhere</span>
+              <span className="h-px w-10 bg-line lg:w-16" aria-hidden="true" />
+            </div>
+
+            <ul className="rise mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
               {profile.socials.map((s) => (
                 <li key={s.label}>
                   <a
@@ -254,7 +259,7 @@ export function Contact() {
         </span>
       </div>
 
-      <div className="shell flex flex-col gap-3 border-t border-line py-7 sm:flex-row sm:items-center sm:justify-between">
+      <div className="shell flex flex-col items-center gap-3 border-t border-line py-7 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <span className="micro text-faint">
           © {year} {profile.name}
         </span>

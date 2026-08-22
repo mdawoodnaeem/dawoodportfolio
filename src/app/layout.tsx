@@ -53,8 +53,8 @@ const url = "https://dawood.dev";
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title: {
-    default: `${profile.short} — Full-Stack, 3D Web & Agentic AI Engineer`,
-    template: `%s — ${profile.short}`,
+    default: `${profile.short} | Full-Stack, 3D Web & Agentic AI Engineer`,
+    template: `%s | ${profile.short}`,
   },
   description: profile.intro,
   keywords: [
@@ -70,14 +70,14 @@ export const metadata: Metadata = {
   creator: profile.name,
   openGraph: {
     type: "website",
-    title: `${profile.short} — Systems that run.`,
+    title: `${profile.short} | Systems that run.`,
     description: profile.intro,
     siteName: profile.name,
     images: [{ url: "/img/avatar.jpg", width: 400, height: 400, alt: profile.name }],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${profile.short} — Systems that run.`,
+    title: `${profile.short} | Systems that run.`,
     description: profile.intro,
     images: ["/img/avatar.jpg"],
   },

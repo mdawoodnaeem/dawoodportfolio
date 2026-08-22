@@ -83,7 +83,7 @@ export function Work() {
             </span>
           </h2>
           <p className="rise col-span-12 self-end text-lead text-muted lg:col-span-4 lg:col-start-9">
-            Each one came off paper, off spreadsheets, or off manual trust — and onto
+            Each one came off paper, off spreadsheets, or off manual trust, and onto
             something that scales.
           </p>
         </div>
