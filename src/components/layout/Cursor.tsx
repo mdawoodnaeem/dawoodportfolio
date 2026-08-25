@@ -39,6 +39,16 @@ export function Cursor() {
     const r = ring.current;
     if (!d || !r) return;
 
+    // A touch-only session never fires a `mouse`/`pen` pointer event, so
+    // `reveal()` never runs and the dot/ring never become visible — but the
+    // idle 9s spin below and the four global listeners would still be set up
+    // and ticking for the entire session regardless. That's real, continuous
+    // main-thread work (a GSAP tween plus event listeners) paid for on every
+    // phone visit for an effect that phone can never see. Bailing out here
+    // when the primary pointer is coarse costs nothing visible and removes
+    // it entirely.
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+
     const reduced = prefersReducedMotion();
 
     gsap.set([d, r], { xPercent: -50, yPercent: -50, opacity: 0 });

@@ -39,6 +39,16 @@ export function Preloader() {
     document.documentElement.style.overflow = "hidden";
     const counter = { v: 0 };
 
+    // Total timeline lands at ~0.9s end-to-end (0.55 + 0.22 + 0.5 - 0.35
+    // overlap), matching the "~900ms" the hero actually needs — the previous
+    // 1.35 + 0.4 + 1.05 timings added up to ~2.7s. The hero's own entrance
+    // (`onReady`/`is-in`) doesn't start until this timeline completes, and
+    // its `.mask`/`.rise` content sits translated out of view / at opacity 0
+    // until then, so every extra second here was a second the real content
+    // stayed hidden behind an opaque curtain — directly costing Speed Index
+    // and LCP on a fresh (non-`sessionStorage`) visit, which is exactly what
+    // every Lighthouse/PSI run is. Same choreography, same design, just
+    // paced the way the comment already said it should be.
     const tl = gsap.timeline({
       onComplete: () => {
         document.documentElement.style.overflow = "";
@@ -48,7 +58,7 @@ export function Preloader() {
 
     tl.to(counter, {
       v: 100,
-      duration: 1.35,
+      duration: 0.55,
       ease: "power2.inOut",
       onUpdate: () => {
         const v = Math.round(counter.v);
@@ -58,16 +68,16 @@ export function Preloader() {
     })
       .to([num.current, bar.current?.parentElement].filter(Boolean), {
         opacity: 0,
-        duration: 0.4,
+        duration: 0.22,
         ease: "power2.out",
       })
       // The curtain leaves upward, so the eye is already travelling toward the
       // hero wordmark by the time it lands.
       .to(root.current, {
         yPercent: -100,
-        duration: 1.05,
+        duration: 0.5,
         ease: EASE,
-      }, "-=0.1");
+      }, "-=0.35");
 
     return () => {
       tl.kill();

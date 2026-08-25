@@ -22,30 +22,53 @@ export function ScrollRail() {
   const { scrollTo } = useSmooth();
 
   useEffect(() => {
-    const read = () => {
-      frame.current = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    // The rail is `hidden` below `lg` in the markup below, so on a phone or
+    // tablet none of this is ever seen — but without this guard the scroll
+    // listener still ran there anyway, reading `getBoundingClientRect` on
+    // every section on every scroll frame purely to update state nobody
+    // could see. That's wasted forced-reflow work on exactly the devices
+    // that can least afford it. `lg` here has to match the `lg:block` below.
+    const mq = window.matchMedia("(min-width: 1024px)");
+    let cleanup: (() => void) | undefined;
 
-      // "Active" is the last section whose top has crossed 45% of the viewport.
-      const line = window.innerHeight * 0.45;
-      let idx = -1;
-      sections.forEach((s, i) => {
-        const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top <= line) idx = i;
-      });
-      setActive(idx);
+    const setup = () => {
+      const read = () => {
+        frame.current = 0;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+
+        // "Active" is the last section whose top has crossed 45% of the viewport.
+        const line = window.innerHeight * 0.45;
+        let idx = -1;
+        sections.forEach((s, i) => {
+          const el = document.getElementById(s.id);
+          if (el && el.getBoundingClientRect().top <= line) idx = i;
+        });
+        setActive(idx);
+      };
+      const onScroll = () => {
+        if (!frame.current) frame.current = requestAnimationFrame(read);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      read();
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+        cancelAnimationFrame(frame.current);
+      };
     };
-    const onScroll = () => {
-      if (!frame.current) frame.current = requestAnimationFrame(read);
+
+    const sync = () => {
+      cleanup?.();
+      cleanup = mq.matches ? setup() : undefined;
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    read();
+
+    sync();
+    mq.addEventListener("change", sync);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      cancelAnimationFrame(frame.current);
+      mq.removeEventListener("change", sync);
+      cleanup?.();
     };
   }, []);
 
