@@ -26,7 +26,33 @@ export function SmoothProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const reduced = prefersReducedMotion();
 
-    if (!reduced) {
+    if (reduced) {
+      setReady(true);
+      return;
+    }
+
+    // Deferred to idle rather than set up in the first effect that runs.
+    // Lenis + GSAP's ticker + ScrollTrigger are real, necessary work, but
+    // none of it needs to happen before the hero is on screen — the hero's
+    // own entrance is gated by the preloader (`onReady`), not by anything
+    // here. Running this setup synchronously on mount put it right in the
+    // middle of the browser's busiest window (hydration + first paint),
+    // which is exactly the "long main-thread task" a throttled mobile CPU
+    // reports as render-delay on the LCP image: the pixels are decoded and
+    // ready, the thread just isn't free to paint them yet. Same fallback
+    // shape as `BackdropMount`'s idle defer for the WebGL layer.
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    let cancelled = false;
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let cleanup: (() => void) | undefined;
+
+    const setup = () => {
+      if (cancelled) return;
       const instance = new Lenis({
         duration: 1.1,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -45,14 +71,25 @@ export function SmoothProvider({ children }: { children: React.ReactNode }) {
       gsap.ticker.lagSmoothing(0);
 
       setReady(true);
-      return () => {
+      cleanup = () => {
         gsap.ticker.remove(tick);
         instance.destroy();
         lenis.current = null;
       };
+    };
+
+    if (w.requestIdleCallback) {
+      idleId = w.requestIdleCallback(setup, { timeout: 1500 });
+    } else {
+      timeoutId = setTimeout(setup, 200);
     }
 
-    setReady(true);
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined) w.cancelIdleCallback?.(idleId);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      cleanup?.();
+    };
   }, []);
 
   // Wire up reveals once the DOM below has mounted. Re-running on `ready`
