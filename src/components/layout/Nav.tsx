@@ -271,6 +271,7 @@ function ThemeToggle({
       }}
       aria-label={`Switch to ${theme === "ink" ? "light" : "dark"} mode`}
       title={`Switch to ${theme === "ink" ? "light" : "dark"} mode`}
+      data-cursor="none"
       className={cn(
         "group relative ml-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
         // Same ember highlight the nav links get, so every interactive thing

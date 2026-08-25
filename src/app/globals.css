@@ -479,7 +479,7 @@ body {
     inset: -50%;
     z-index: 60;
     pointer-events: none;
-    background-image: url("/textures/grain.png");
+    background-image: url("/textures/grain.webp");
     background-size: 220px;
     opacity: var(--grain);
     mix-blend-mode: overlay;

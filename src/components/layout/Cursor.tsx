@@ -82,8 +82,16 @@ export function Cursor() {
       if (!isFine(e)) return;
       const hit = (e.target as HTMLElement)?.closest?.(
         "a, button, [data-cursor], input, textarea, summary"
-      );
-      const active = !!hit;
+      ) as HTMLElement | null;
+      // Small icon-only circles (social row, nav controls) opt out with
+      // data-cursor="none" — at 50px the grown ring is wider than a 44px
+      // icon button, so it visually sat right on top of the glyph and
+      // swallowed it (that's what the X icon "turning white" actually was:
+      // the ring's own fill, centred exactly on the button, not a CSS bug
+      // in the button itself). Compact targets now just get the resting
+      // dot + dashed ring with no growth at all.
+      const suppressed = hit?.dataset.cursor === "none";
+      const active = !!hit && !suppressed;
       gsap.to(r, {
         width: active ? 50 : 30,
         height: active ? 50 : 30,
@@ -91,9 +99,7 @@ export function Cursor() {
         borderColor: active ? "rgb(var(--accent) / 0.85)" : "rgb(var(--accent) / 0.45)",
         duration: 0.4,
         ease: "expo.out",
-        onStart: () => {
-          r.style.borderStyle = active ? "solid" : "dashed";
-        },
+        onStart: () => (r.style.borderStyle = active ? "solid" : "dashed"),
       });
       spin?.timeScale(active ? 2.6 : 1);
       gsap.to(d, { scale: active ? 0.4 : 1, duration: 0.3, ease: "expo.out" });

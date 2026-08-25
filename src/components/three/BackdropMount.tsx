@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
 /**
@@ -13,5 +14,27 @@ import dynamic from "next/dynamic";
 const Backdrop = dynamic(() => import("./Backdrop"), { ssr: false });
 
 export function BackdropMount() {
+  // Three.js + react-three-fiber is the single heaviest chunk on the page.
+  // Deferring its fetch/parse to the browser's idle slot — after the page
+  // has already painted and hydrated — keeps it from competing with the
+  // hero portrait and the rest of the visible content for the main thread
+  // on the first render, which is exactly what a throttled mobile Lighthouse
+  // run penalises. The backdrop is decorative and behind everything, so a
+  // fractional, imperceptible delay before it fades in costs nothing visible.
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setReady(true), { timeout: 1500 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(() => setReady(true), 200);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!ready) return null;
   return <Backdrop />;
 }

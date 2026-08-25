@@ -225,7 +225,7 @@ export function Contact() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={s.label}
-                    data-cursor="grow"
+                    data-cursor="none"
                     className={`grid h-11 w-11 place-items-center rounded-full border border-line text-muted transition-all duration-400 ease-out hover:-translate-y-1 hover:scale-110 focus-visible:-translate-y-1 focus-visible:scale-110 ${
                       SOCIAL_STYLE[s.label] ?? "hover:border-accent hover:bg-accent hover:text-page focus-visible:border-accent focus-visible:bg-accent focus-visible:text-page"
                     }`}
