@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
+// Named imports rather than `import * as THREE` — the namespace form makes it
+// impossible for the bundler to prove which of three.js's exports are
+// actually reachable, so the whole library (every geometry, material and
+// loader) rides along in the chunk regardless of what this file touches.
+// Naming exactly the five symbols used here lets tree-shaking drop the rest.
+import { Color, Mesh, ShaderMaterial, Vector2 } from "three";
 import { BACKDROPS } from "@/content/backdrops";
 
 /* ==========================================================================
@@ -182,8 +187,8 @@ const FRAG = /* glsl */ `
 `;
 
 function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number }> }) {
-  const mat = useRef<THREE.ShaderMaterial>(null);
-  const quad = useRef<THREE.Mesh>(null);
+  const mat = useRef<ShaderMaterial>(null);
+  const quad = useRef<Mesh>(null);
   const { size } = useThree();
 
   // The playground runs its own WebGL context with real geometry and
@@ -216,7 +221,7 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
 
   // Live mood state, lerped toward the section's target every frame.
   const state = useRef({
-    c1: new THREE.Color(), c2: new THREE.Color(), c3: new THREE.Color(), c4: new THREE.Color(),
+    c1: new Color(), c2: new Color(), c3: new Color(), c4: new Color(),
     modeA: 0, modeB: 0, mix: 0, ready: false,
   });
 
@@ -229,11 +234,11 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
       uModeB: { value: 0 },
       uIntensity: { value: 0.5 },
       uDark: { value: 1 },
-      uMouse: { value: new THREE.Vector2() },
-      uC1: { value: new THREE.Color("#08090b") },
-      uC2: { value: new THREE.Color("#1a1520") },
-      uC3: { value: new THREE.Color("#ff6a33") },
-      uC4: { value: new THREE.Color("#6f88ac") },
+      uMouse: { value: new Vector2() },
+      uC1: { value: new Color("#08090b") },
+      uC2: { value: new Color("#1a1520") },
+      uC3: { value: new Color("#ff6a33") },
+      uC4: { value: new Color("#6f88ac") },
     }),
     []
   );
@@ -279,10 +284,10 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
     const palFrom = dark ? from.ink : from.paper;
     const palTo = dark ? to.ink : to.paper;
 
-    const t1 = new THREE.Color(palFrom[0]).lerp(new THREE.Color(palTo[0]), eased);
-    const t2 = new THREE.Color(palFrom[1]).lerp(new THREE.Color(palTo[1]), eased);
-    const t3 = new THREE.Color(palFrom[2]).lerp(new THREE.Color(palTo[2]), eased);
-    const t4 = new THREE.Color(palFrom[3]).lerp(new THREE.Color(palTo[3]), eased);
+    const t1 = new Color(palFrom[0]).lerp(new Color(palTo[0]), eased);
+    const t2 = new Color(palFrom[1]).lerp(new Color(palTo[1]), eased);
+    const t3 = new Color(palFrom[2]).lerp(new Color(palTo[2]), eased);
+    const t4 = new Color(palFrom[3]).lerp(new Color(palTo[3]), eased);
 
     const rate = s.ready ? Math.min(1, d * 2.2) : 1;
     s.ready = true;

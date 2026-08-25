@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { hasWeakGPU } from "@/lib/gl";
 
 /**
  * Client boundary for the living backdrop.
@@ -24,6 +25,7 @@ export function BackdropMount() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (hasWeakGPU()) return; // no real GPU behind this session — draw nothing
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
       cancelIdleCallback?: (id: number) => void;

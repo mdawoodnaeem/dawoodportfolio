@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { hasWeakGPU } from "@/lib/gl";
 import { SectionHead } from "@/components/ui/Type";
 
 /**
@@ -36,16 +37,22 @@ export function Playground() {
   const [visible, setVisible] = useState(false);
   const [pushed, setPushed] = useState(false);
   const [reduced, setReduced] = useState(false);
+  // Same decorative-WebGL bailout as the backdrop: no real GPU behind this
+  // session (an automated audit, or a real visitor on a software renderer)
+  // means the interactive scene never mounts, same as reduced motion.
+  const [weak, setWeak] = useState(false);
+  const skip = reduced || weak;
 
   useEffect(() => {
     setReduced(prefersReducedMotion());
+    setWeak(hasWeakGPU());
   }, []);
 
   // Only fetch the bundle when the section is genuinely approaching, and keep
   // watching afterwards so the scene can pause itself once it's scrolled away.
   useEffect(() => {
     const el = root.current;
-    if (!el || prefersReducedMotion()) return;
+    if (!el || skip) return;
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) setMount(true);
@@ -55,11 +62,11 @@ export function Playground() {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [skip]);
 
   // Feed section scroll progress to the camera rig.
   useEffect(() => {
-    if (!root.current || prefersReducedMotion()) return;
+    if (!root.current || skip) return;
     const ctx = gsap.context(() => {
       gsap.to(progress, {
         current: 1,
@@ -73,7 +80,7 @@ export function Playground() {
       });
     }, root);
     return () => ctx.revert();
-  }, []);
+  }, [skip]);
 
   return (
     <section
@@ -105,8 +112,8 @@ export function Playground() {
             </span>
           </h2>
           <p className="rise col-span-12 text-lead text-muted lg:col-span-4 lg:col-start-9">
-            {reduced
-              ? "An interactive arrangement of glass, metal and ember. Paused, because your system asks for reduced motion."
+            {skip
+              ? "An interactive arrangement of glass, metal and ember — paused for this session."
               : "Grab any of them and throw it, the rest get out of the way. Click empty space to scatter the lot. Nothing here breaks; it all comes back."}
           </p>
         </div>
@@ -119,14 +126,14 @@ export function Playground() {
         role="img"
         aria-label="An interactive cluster of tumbling glass, metal and ember-coloured objects. They lean away from the pointer, can be picked up and thrown, and scatter when the background is clicked."
       >
-        {mount && !reduced ? (
+        {mount && !skip ? (
           <Workshop progress={progress} onPush={() => setPushed(true)} active={visible} />
         ) : (
-          <SceneSkeleton />
+          <SceneSkeleton loading={!skip} />
         )}
 
         {/* Hint retires itself the first time the visitor actually pushes. */}
-        {!reduced && (
+        {!skip && (
           <span
             className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-700 ease-out"
             style={{ opacity: pushed ? 0 : 1 }}
@@ -149,13 +156,23 @@ export function Playground() {
 /**
  * Placeholder that occupies the exact stage box while the scene loads, so the
  * section never reflows when the canvas arrives.
+ *
+ * `loading` distinguishes "the bundle is still on its way" (pulsing dot) from
+ * "there is no scene coming this session" (weak GPU or reduced motion) —
+ * without it, a visitor on a software renderer would see the pulsing "warming
+ * up" state sit there forever, which reads as broken rather than as a
+ * deliberate choice.
  */
-function SceneSkeleton() {
+function SceneSkeleton({ loading = true }: { loading?: boolean }) {
   return (
     <div className="grid h-full w-full place-items-center" aria-hidden="true">
       <div className="flex items-center gap-3">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-        <span className="micro text-faint">Warming up the workshop</span>
+        <span
+          className={loading ? "h-1.5 w-1.5 animate-pulse rounded-full bg-accent" : "h-1.5 w-1.5 rounded-full bg-faint"}
+        />
+        <span className="micro text-faint">
+          {loading ? "Warming up the workshop" : "Still life, for this session"}
+        </span>
       </div>
     </div>
   );

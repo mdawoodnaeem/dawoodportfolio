@@ -3,7 +3,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import * as THREE from "three";
+// Named imports rather than `import * as THREE` — see Backdrop.tsx for why.
+// This file only ever touches these thirteen exports; everything else three
+// ships (every other geometry/loader/control) can now be dropped by the
+// bundler instead of being kept because the namespace form hides which
+// pieces are actually reachable.
+import {
+  AdditiveBlending,
+  CanvasTexture,
+  Color,
+  Euler,
+  Group,
+  Mesh,
+  NormalBlending,
+  Plane,
+  Quaternion,
+  Raycaster,
+  SRGBColorSpace,
+  Vector2,
+  Vector3,
+} from "three";
 
 /**
  * THE WORKSHOP
@@ -77,10 +96,10 @@ const PIECES_PORTRAIT: PieceDef[] = PIECES.map((p, i) => ({
 }));
 
 /** Shared mutable state — cheaper than React state for per-frame reads. */
-type Burst = { at: number; origin: THREE.Vector3 } | null;
+type Burst = { at: number; origin: Vector3 } | null;
 
 /** Which object the pointer currently has hold of, and where it grabbed it. */
-type Drag = { index: number; offset: THREE.Vector3 } | null;
+type Drag = { index: number; offset: Vector3 } | null;
 
 /**
  * Every object's live world position, written each frame. Pieces read it to
@@ -88,7 +107,7 @@ type Drag = { index: number; offset: THREE.Vector3 } | null;
  * nothing, and "the cluster parts around the thing in your hand" is most of
  * what makes dragging feel physical rather than like moving a sprite.
  */
-type Shared = { pos: THREE.Vector3[]; drag: Drag };
+type Shared = { pos: Vector3[]; drag: Drag };
 
 function geometryFor(g: PieceDef["geometry"]) {
   switch (g) {
@@ -122,20 +141,20 @@ function Piece({
   burst: React.MutableRefObject<Burst>;
   shared: React.MutableRefObject<Shared>;
   quality: "high" | "low";
-  accent: THREE.Color;
+  accent: Color;
 }) {
-  const ref = useRef<THREE.Mesh>(null);
-  const home = useMemo(() => new THREE.Vector3(...piece.home), [piece.home]);
+  const ref = useRef<Mesh>(null);
+  const home = useMemo(() => new Vector3(...piece.home), [piece.home]);
   const pos = useMemo(() => home.clone(), [home]);
-  const vel = useMemo(() => new THREE.Vector3(), []);
-  const target = useMemo(() => new THREE.Vector3(), []);
-  const pointer3 = useMemo(() => new THREE.Vector3(), []);
-  const tmp = useMemo(() => new THREE.Vector3(), []);
+  const vel = useMemo(() => new Vector3(), []);
+  const target = useMemo(() => new Vector3(), []);
+  const pointer3 = useMemo(() => new Vector3(), []);
+  const tmp = useMemo(() => new Vector3(), []);
   const handled = useRef(0);
-  const plane = useMemo(() => new THREE.Plane(), []);
-  const hit = useMemo(() => new THREE.Vector3(), []);
-  const nrm = useMemo(() => new THREE.Vector3(), []);
-  const ray = useMemo(() => new THREE.Raycaster(), []);
+  const plane = useMemo(() => new Plane(), []);
+  const hit = useMemo(() => new Vector3(), []);
+  const nrm = useMemo(() => new Vector3(), []);
+  const ray = useMemo(() => new Raycaster(), []);
   const [held, setHeld] = useState(false);
   const [hover, setHover] = useState(false);
 
@@ -152,24 +171,24 @@ function Piece({
    * torque; the velocity eases back toward the baseline over a couple of
    * seconds rather than being damped to a stop.
    */
-  const baseSpin = useMemo(() => new THREE.Vector3(...piece.spin), [piece.spin]);
+  const baseSpin = useMemo(() => new Vector3(...piece.spin), [piece.spin]);
   const angVel = useMemo(() => baseSpin.clone(), [baseSpin]);
   /** Where a push is taken to land relative to the centre, giving r x F a moment arm. */
   const arm = useMemo(
     () =>
-      new THREE.Vector3(
+      new Vector3(
         Math.sin(index * 2.3),
         Math.cos(index * 1.7),
         Math.sin(index * 3.1)
       ).normalize(),
     [index]
   );
-  const torque = useMemo(() => new THREE.Vector3(), []);
-  const spinQ = useMemo(() => new THREE.Quaternion(), []);
-  const spinE = useMemo(() => new THREE.Euler(), []);
+  const torque = useMemo(() => new Vector3(), []);
+  const spinQ = useMemo(() => new Quaternion(), []);
+  const spinE = useMemo(() => new Euler(), []);
 
   /** Integrate the tumble and ease the rate back toward its idle baseline. */
-  const tumble = (mesh: THREE.Mesh, d: number) => {
+  const tumble = (mesh: Mesh, d: number) => {
     angVel.lerp(baseSpin, Math.min(1, 0.45 * d));
     spinE.set(angVel.x * d, angVel.y * d, angVel.z * d);
     spinQ.setFromEuler(spinE);
@@ -204,7 +223,7 @@ function Piece({
       state.camera.getWorldDirection(nrm);
       mesh.getWorldPosition(hit);
       plane.setFromNormalAndCoplanarPoint(nrm, hit);
-      ray.setFromCamera(state.pointer as THREE.Vector2, state.camera);
+      ray.setFromCamera(state.pointer as Vector2, state.camera);
       if (ray.ray.intersectPlane(plane, hit)) {
         mesh.parent?.worldToLocal(hit);
         target.copy(hit).add(shared.current.drag!.offset);
@@ -360,8 +379,8 @@ function Backdrop({
   page,
   light,
 }: {
-  accent: THREE.Color;
-  page: THREE.Color;
+  accent: Color;
+  page: Color;
   light: boolean;
 }) {
   // A soft additive glow. Alpha does the falloff so the disc has no edge.
@@ -376,8 +395,8 @@ function Backdrop({
     grad.addColorStop(1, "rgba(255,255,255,0)");
     g.fillStyle = grad;
     g.fillRect(0, 0, 256, 256);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
     return t;
   }, []);
 
@@ -407,7 +426,7 @@ function Backdrop({
           color={accent}
           transparent
           depthWrite={false}
-          blending={light ? THREE.NormalBlending : THREE.AdditiveBlending}
+          blending={light ? NormalBlending : AdditiveBlending}
           toneMapped={false}
           opacity={light ? 0.16 : 0.85}
         />
@@ -421,7 +440,7 @@ function Rig({
   group,
   progress,
 }: {
-  group: React.RefObject<THREE.Group | null>;
+  group: React.RefObject<Group | null>;
   progress: React.MutableRefObject<number>;
 }) {
   const { camera } = useThree();
@@ -456,7 +475,7 @@ export default function Workshop({
 }) {
   const burst = useRef<Burst>(null);
   const shared = useRef<Shared>({
-    pos: PIECES.map((p) => new THREE.Vector3(...p.home)),
+    pos: PIECES.map((p) => new Vector3(...p.home)),
     drag: null,
   });
 
@@ -473,12 +492,12 @@ export default function Workshop({
       window.removeEventListener("pointercancel", release);
     };
   }, []);
-  const group = useRef<THREE.Group>(null);
+  const group = useRef<Group>(null);
   const [quality, setQuality] = useState<"high" | "low">("high");
   const [portrait, setPortrait] = useState(false);
   const pieces = portrait ? PIECES_PORTRAIT : PIECES;
-  const [accent, setAccent] = useState(() => new THREE.Color("#ff5a1f"));
-  const [page, setPage] = useState(() => new THREE.Color("#08090b"));
+  const [accent, setAccent] = useState(() => new Color("#ff5a1f"));
+  const [page, setPage] = useState(() => new Color("#08090b"));
   const [light, setLight] = useState(false);
 
   // A backgrounded tab shouldn't keep this rendering either, independent of
@@ -516,7 +535,7 @@ export default function Workshop({
       const [r, g, b] = raw.split(/\s+/).map(Number);
       if (Number.isNaN(r)) return null;
       // The tokens are sRGB bytes; the renderer works in linear space.
-      return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
+      return new Color().setRGB(r / 255, g / 255, b / 255, SRGBColorSpace);
     };
     const sync = () => {
       const a = read("--accent");
@@ -531,11 +550,11 @@ export default function Workshop({
     return () => mo.disconnect();
   }, []);
 
-  const push = (e: { point?: THREE.Vector3 } | null) => {
+  const push = (e: { point?: Vector3 } | null) => {
     if (shared.current.drag) return;
     burst.current = {
       at: performance.now(),
-      origin: e?.point ? e.point.clone() : new THREE.Vector3(0, 0, 0),
+      origin: e?.point ? e.point.clone() : new Vector3(0, 0, 0),
     };
     onPush?.();
   };
