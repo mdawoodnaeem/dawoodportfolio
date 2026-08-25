@@ -26,6 +26,14 @@ export function Playground() {
   const root = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const [mount, setMount] = useState(false);
+  // Tracks whether the stage is genuinely on screen right now, not just
+  // whether it has ever been. `mount` only ever flips on — it exists purely
+  // to defer fetching the three.js bundle until the section is close. Without
+  // a second, live signal the canvas would keep rendering every frame for the
+  // rest of the session the moment you scrolled past it once, which is a full
+  // WebGL scene (transmission, an environment pass, seven meshes) running
+  // forever behind sections that never show it again.
+  const [visible, setVisible] = useState(false);
   const [pushed, setPushed] = useState(false);
   const [reduced, setReduced] = useState(false);
 
@@ -33,16 +41,15 @@ export function Playground() {
     setReduced(prefersReducedMotion());
   }, []);
 
-  // Only fetch the bundle when the section is genuinely approaching.
+  // Only fetch the bundle when the section is genuinely approaching, and keep
+  // watching afterwards so the scene can pause itself once it's scrolled away.
   useEffect(() => {
     const el = root.current;
     if (!el || prefersReducedMotion()) return;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) {
-          setMount(true);
-          io.disconnect();
-        }
+        if (e.isIntersecting) setMount(true);
+        setVisible(e.isIntersecting);
       },
       { rootMargin: "100% 0px" }
     );
@@ -113,7 +120,7 @@ export function Playground() {
         aria-label="An interactive cluster of tumbling glass, metal and ember-coloured objects. They lean away from the pointer, can be picked up and thrown, and scatter when the background is clicked."
       >
         {mount && !reduced ? (
-          <Workshop progress={progress} onPush={() => setPushed(true)} />
+          <Workshop progress={progress} onPush={() => setPushed(true)} active={visible} />
         ) : (
           <SceneSkeleton />
         )}

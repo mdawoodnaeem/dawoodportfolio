@@ -29,10 +29,10 @@ export function BackdropMount() {
       cancelIdleCallback?: (id: number) => void;
     };
     if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(() => setReady(true), { timeout: 1500 });
+      const id = w.requestIdleCallback(() => setReady(true), { timeout: 2500 });
       return () => w.cancelIdleCallback?.(id);
     }
-    const t = setTimeout(() => setReady(true), 200);
+    const t = setTimeout(() => setReady(true), 400);
     return () => clearTimeout(t);
   }, []);
 

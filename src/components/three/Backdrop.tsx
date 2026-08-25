@@ -74,9 +74,11 @@ const FRAG = /* glsl */ `
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    // Five octaves rather than four: the extra detail is what stops the field
-    // resolving into a few big blobs at this scale.
-    for (int i = 0; i < 5; i++) {
+    // Four octaves. Five was imperceptibly finer at this scale but is called
+    // three times per pixel every frame — the single biggest lever on the
+    // fragment cost of this shader, so it stays as low as the field can take
+    // without resolving into a few big blobs.
+    for (int i = 0; i < 4; i++) {
       v += a * noise(p);
       p *= 2.02;
       a *= 0.5;
@@ -200,6 +202,18 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
     return () => io.disconnect();
   }, []);
 
+  // Section elements, looked up once. This used to run `document.querySelector`
+  // for every one of the nine sections on every single animation frame —
+  // forever, for as long as the tab stayed open — which is a full DOM search
+  // plus a forced layout read sixty times a second. The elements themselves
+  // never change after mount, only their position on scroll, so they're
+  // resolved once here and the frame loop below just reads `getBoundingClientRect`
+  // off the cached nodes.
+  const els = useRef<(HTMLElement | null)[]>([]);
+  useEffect(() => {
+    els.current = BACKDROPS.map((b) => document.querySelector<HTMLElement>(b.selector));
+  }, []);
+
   // Live mood state, lerped toward the section's target every frame.
   const state = useRef({
     c1: new THREE.Color(), c2: new THREE.Color(), c3: new THREE.Color(), c4: new THREE.Color(),
@@ -242,14 +256,12 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
     let idx = 0;
     let blend = 0;
     for (let i = 0; i < BACKDROPS.length; i++) {
-      const el = document.querySelector<HTMLElement>(BACKDROPS[i].selector);
+      const el = els.current[i];
       if (!el) continue;
       const top = el.getBoundingClientRect().top;
       if (top <= vhMid) {
         idx = i;
-        const next = document.querySelector<HTMLElement>(
-          BACKDROPS[Math.min(i + 1, BACKDROPS.length - 1)].selector
-        );
+        const next = els.current[Math.min(i + 1, BACKDROPS.length - 1)];
         const nextTop = next ? next.getBoundingClientRect().top : Infinity;
         const span = nextTop - top;
         blend = span > 0 && Number.isFinite(span) ? Math.min(1, Math.max(0, (vhMid - top) / span)) : 0;
@@ -311,6 +323,37 @@ function Field({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number
   );
 }
 
+/**
+ * Drives the render loop by hand instead of leaving the canvas on
+ * `frameloop="always"`.
+ *
+ * `"always"` calls `gl.render` on every single display refresh for as long
+ * as the canvas exists — a background layer never needs 60 (or 120) fresh
+ * frames a second, the field drifts slowly enough that half that is
+ * indistinguishable, and a hidden tab needs zero. Here the canvas runs in
+ * `"demand"` mode and this component is the only thing calling `invalidate`,
+ * on its own timer, so both the target rate and the pause condition are
+ * explicit instead of inherited from the display's refresh rate.
+ */
+function Clock({ fps, paused }: { fps: number; paused: React.MutableRefObject<boolean> }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    const interval = 1000 / fps;
+    const tick = (t: number) => {
+      raf = requestAnimationFrame(tick);
+      if (paused.current) return;
+      if (t - last < interval) return;
+      last = t;
+      invalidate();
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [fps, invalidate, paused]);
+  return null;
+}
+
 export default function Backdrop() {
   const mouse = useRef({ x: 0, y: 0 });
   const [enabled, setEnabled] = useState(false);
@@ -319,13 +362,30 @@ export default function Backdrop() {
   // 2–3 pushes several times the fragment-shader work of a desktop tab at
   // the same CSS size, and the field is smooth by nature so it loses
   // nothing visible at a lower pixel ratio.
-  const [maxDpr, setMaxDpr] = useState(1.35);
+  const [maxDpr, setMaxDpr] = useState(1.2);
+  const [fps, setFps] = useState(30);
+  // Tab-hidden pause. A `requestAnimationFrame` loop is already throttled by
+  // the browser in a background tab, but on desktop Chrome that throttle is
+  // only ~1fps, not zero — this stops the `invalidate` calls outright rather
+  // than relying on that.
+  const paused = useRef(false);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setEnabled(!reduced);
     const coarse = window.matchMedia("(pointer: coarse)").matches;
-    setMaxDpr(coarse || window.innerWidth < 768 ? 1 : 1.35);
+    const small = coarse || window.innerWidth < 768;
+    setMaxDpr(small ? 1 : 1.2);
+    setFps(small ? 24 : 30);
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => {
+      paused.current = document.hidden;
+    };
+    onVis();
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
 
   useEffect(() => {
@@ -350,8 +410,10 @@ export default function Backdrop() {
         dpr={[1, maxDpr]}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ width: "100%", height: "100%" }}
+        frameloop="demand"
       >
         <Field mouse={mouse} />
+        <Clock fps={fps} paused={paused} />
       </Canvas>
     </div>
   );

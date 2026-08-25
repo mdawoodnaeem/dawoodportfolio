@@ -441,9 +441,18 @@ function Rig({
 export default function Workshop({
   progress,
   onPush,
+  active = true,
 }: {
   progress: React.MutableRefObject<number>;
   onPush?: () => void;
+  /**
+   * Whether the stage is currently on screen. When it isn't, the canvas's
+   * `frameloop` is switched to `"never"`, which stops `gl.render` from being
+   * called at all — a full glass/metal scene with an environment pass has no
+   * business rendering every frame once it's scrolled out of view, and
+   * without this it never stopped for the rest of the session.
+   */
+  active?: boolean;
 }) {
   const burst = useRef<Burst>(null);
   const shared = useRef<Shared>({
@@ -471,6 +480,16 @@ export default function Workshop({
   const [accent, setAccent] = useState(() => new THREE.Color("#ff5a1f"));
   const [page, setPage] = useState(() => new THREE.Color("#08090b"));
   const [light, setLight] = useState(false);
+
+  // A backgrounded tab shouldn't keep this rendering either, independent of
+  // scroll position.
+  const [tabVisible, setTabVisible] = useState(true);
+  useEffect(() => {
+    const onVis = () => setTabVisible(!document.hidden);
+    onVis();
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   // Transmission is the single most expensive thing here; small screens and
   // low core counts get the cheaper material set instead of a dropped frame rate.
@@ -528,6 +547,7 @@ export default function Workshop({
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ touchAction: "pan-y" }}
       onPointerMissed={() => push(null)}
+      frameloop={active && tabVisible ? "always" : "never"}
     >
       <ambientLight intensity={0.85} />
       <directionalLight position={[4, 6, 5]} intensity={1.5} />
