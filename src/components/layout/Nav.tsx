@@ -84,7 +84,7 @@ export function Nav() {
           >
             <span className="relative h-8 w-8 overflow-hidden rounded-full ring-1 ring-inset ring-ink/15">
               <Image
-                src="/img/nav-avatar.jpg"
+                src="/img/avatar.jpg"
                 alt=""
                 fill
                 sizes="32px"

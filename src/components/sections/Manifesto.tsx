@@ -22,7 +22,7 @@ import { PortraitSlot } from "@/components/ui/Portrait";
  */
 export function Manifesto() {
   const root = useRef<HTMLElement>(null);
-  const words = useRef<HTMLSpanElement>(null);
+  const words = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (!root.current || prefersReducedMotion()) return;
@@ -64,14 +64,14 @@ export function Manifesto() {
           the display trim on each pulled them into one another, and with
           sentence case (which has real descenders, unlike caps) they
           overlapped outright. */}
-      <h2 className="mt-12 display display-trim text-d2" data-reveal data-stagger="0.09">
+      <div className="mt-12 display display-trim text-d2" data-reveal data-stagger="0.09">
         <span className="mask block">
           <span className="grad">{manifesto.statement[0]}</span>
         </span>
-        <span ref={words} className="grad-scrub block lg:pl-[7vw]">
+        <p ref={words} className="grad-scrub block lg:pl-[7vw]">
           {manifesto.statement[1]}
-        </span>
-      </h2>
+        </p>
+      </div>
 
       {/* The travelling portrait's middle stop, with the argument beside it. */}
       <div className="mt-[clamp(3rem,7vw,6rem)] grid grid-cols-12 items-center gap-y-12 lg:gap-x-10">

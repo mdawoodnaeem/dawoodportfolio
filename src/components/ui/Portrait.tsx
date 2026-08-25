@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
 import { profile } from "@/content/site";
 
 /* ==========================================================================
@@ -95,57 +96,30 @@ export function PortraitSlot({ id, className = "" }: { id: SlotId; className?: s
 /*  Faces                                                                      */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Fixed absolute-fill `<img>` standing in for next/image's `fill` mode.
- *
- * With `images.unoptimized: true` in next.config, next/image can't generate
- * actual resized variants — every entry in its `srcSet` points at the same
- * full 900x1125 original regardless of viewport, so a phone downloads the
- * same file a desktop does. A plain `<img>` with a real width-descriptor
- * `srcSet` against our own pre-built 600w file lets the browser pick the
- * right one itself, same as next/image would if the optimizer were live.
- */
-function ResponsivePortrait({
-  base,
-  alt,
-  priority,
-  ariaHidden,
-}: {
-  base: "portrait-ink" | "portrait-paper";
-  alt: string;
-  priority: boolean;
-  ariaHidden?: boolean;
-}) {
-  return (
-    <img
-      src={`/img/${base}.jpg`}
-      srcSet={`/img/${base}-600.jpg 600w, /img/${base}.jpg 900w`}
-      sizes="(max-width: 1024px) 76vw, 24rem"
-      width={900}
-      height={1125}
-      alt={ariaHidden ? "" : alt}
-      aria-hidden={ariaHidden || undefined}
-      loading={priority ? "eager" : "lazy"}
-      fetchPriority={priority ? "high" : undefined}
-      decoding="async"
-      className={`absolute inset-0 h-full w-full ${
-        base === "portrait-ink" ? "img-ink" : "img-paper"
-      } object-cover object-[50%_16%] transition-opacity duration-500`}
-    />
-  );
-}
-
 function PhotoFace({ priority = false }: { priority?: boolean }) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-panel">
       {/* Both grades ship; CSS picks one per theme, so neither mode is ever
           looking at an image lit for the other. */}
-      <ResponsivePortrait
-        base="portrait-ink"
+      <Image
+        src="/img/portrait-ink.jpg"
         alt={`${profile.name}, ${profile.role}`}
+        fill
         priority={priority}
+        loading={priority ? undefined : "lazy"}
+        sizes="(max-width: 1024px) 76vw, 24rem"
+        className="img-ink object-cover object-[50%_16%] transition-opacity duration-500"
       />
-      <ResponsivePortrait base="portrait-paper" alt="" priority={priority} ariaHidden />
+      <Image
+        src="/img/portrait-paper.jpg"
+        alt=""
+        aria-hidden="true"
+        fill
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
+        sizes="(max-width: 1024px) 76vw, 24rem"
+        className="img-paper object-cover object-[50%_16%] transition-opacity duration-500"
+      />
       <div className="pointer-events-none absolute inset-0 rounded-panel ring-1 ring-inset ring-ink/10" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent" />
       <div className="absolute inset-x-5 bottom-5">
