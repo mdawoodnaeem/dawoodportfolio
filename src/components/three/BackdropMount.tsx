@@ -26,10 +26,11 @@ export function BackdropMount() {
   useEffect(() => {
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
     };
     if (w.requestIdleCallback) {
       const id = w.requestIdleCallback(() => setReady(true), { timeout: 1500 });
-      return () => (window as any).cancelIdleCallback?.(id);
+      return () => w.cancelIdleCallback?.(id);
     }
     const t = setTimeout(() => setReady(true), 200);
     return () => clearTimeout(t);

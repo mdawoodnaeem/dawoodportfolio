@@ -99,7 +99,9 @@ export function Cursor() {
         borderColor: active ? "rgb(var(--accent) / 0.85)" : "rgb(var(--accent) / 0.45)",
         duration: 0.4,
         ease: "expo.out",
-        onStart: () => (r.style.borderStyle = active ? "solid" : "dashed"),
+        onStart: () => {
+          r.style.borderStyle = active ? "solid" : "dashed";
+        },
       });
       spin?.timeScale(active ? 2.6 : 1);
       gsap.to(d, { scale: active ? 0.4 : 1, duration: 0.3, ease: "expo.out" });
