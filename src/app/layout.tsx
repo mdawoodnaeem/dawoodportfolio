@@ -43,7 +43,10 @@ const display = Bricolage_Grotesque({
 const sans = Archivo({
   subsets: ["latin"],
   axes: ["wdth"],
-  style: ["normal", "italic"],
+  // No italic cut is requested, because nothing on the site sets one — the
+  // display face carries no italic by design, and the single <cite> that would
+  // have inherited one is explicitly `not-italic`. Asking for the style built a
+  // second variable font into the output for nobody.
   variable: "--font-sans",
   display: "swap",
 });
@@ -99,6 +102,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Blocking: stamps data-theme before first paint so there is no flash. */}
         <ThemeScript />
+        {/* The grain tile is a CSS background, so the browser cannot see it
+            until the stylesheet has been parsed and the layer is laid out —
+            by which point it is competing with the hero portrait for the same
+            connection, at low priority, and the blended overlay it feeds sits
+            above every pixel on the page. Naming it in the document lets the
+            preload scanner start it with the first bytes of HTML instead. */}
+        <link rel="preload" as="image" href="/textures/grain.webp" type="image/webp" fetchPriority="low" />
       </head>
       {/* Lenis writes inline styles onto <body> the moment it initialises,
           which React's hydration pass reports as a mismatch. The markup itself

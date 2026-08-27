@@ -9,8 +9,20 @@ import {
   useRef,
   useState,
 } from "react";
-import Image from "next/image";
+import { Photo } from "@/components/ui/Photo";
 import { profile } from "@/content/site";
+
+/**
+ * The portrait is never rendered wider than 384 CSS px (24rem at xl) and never
+ * wider than 304 below lg, so the browser is told exactly that rather than
+ * being left to assume the full viewport. Written as plain media queries — a
+ * `min()` inside `sizes` is a newer syntax than the oldest browser this project
+ * still builds for, and an unparsed source-size silently falls back to 100vw,
+ * which would put us straight back to shipping the 900px master to phones.
+ */
+const PORTRAIT_SIZES =
+  "(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";
+const PORTRAIT_WIDTHS = [384, 512, 640, 768, 900];
 
 /* ==========================================================================
    TRAVELLING PORTRAIT
@@ -101,23 +113,23 @@ function PhotoFace({ priority = false }: { priority?: boolean }) {
     <div className="relative h-full w-full overflow-hidden rounded-panel">
       {/* Both grades ship; CSS picks one per theme, so neither mode is ever
           looking at an image lit for the other. */}
-      <Image
-        src="/img/portrait-ink.jpg"
+      <Photo
+        base="portrait-ink"
+        fallback="/img/portrait-ink.jpg"
+        widths={PORTRAIT_WIDTHS}
+        sizes={PORTRAIT_SIZES}
         alt={`${profile.name}, ${profile.role}`}
-        fill
         priority={priority}
-        loading={priority ? undefined : "lazy"}
-        sizes="(max-width: 1024px) 76vw, 24rem"
         className="img-ink object-cover object-[50%_16%] transition-opacity duration-500"
       />
-      <Image
-        src="/img/portrait-paper.jpg"
+      <Photo
+        base="portrait-paper"
+        fallback="/img/portrait-paper.jpg"
+        widths={PORTRAIT_WIDTHS}
+        sizes={PORTRAIT_SIZES}
         alt=""
-        aria-hidden="true"
-        fill
+        hidden
         priority={priority}
-        loading={priority ? undefined : "lazy"}
-        sizes="(max-width: 1024px) 76vw, 24rem"
         className="img-paper object-cover object-[50%_16%] transition-opacity duration-500"
       />
       <div className="pointer-events-none absolute inset-0 rounded-panel ring-1 ring-inset ring-ink/10" />

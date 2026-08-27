@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { sections, profile } from "@/content/site";
 import { gsap } from "@/lib/motion";
 import { useTheme } from "@/lib/theme";
 import { useSmooth } from "@/lib/smooth";
 import { cn } from "@/lib/cn";
+import { Photo } from "@/components/ui/Photo";
 
 /**
  * NAV
@@ -79,15 +79,22 @@ export function Nav() {
           {/* Avatar chip doubles as back-to-top. */}
           <button
             onClick={() => scrollTo(0)}
-            aria-label="Back to top"
+            /* The accessible name has to contain the visible label, or voice
+               control has no way to say "click Dawood" — the words on screen
+               and the words the button answers to must overlap. */
+            aria-label="Dawood — back to top"
             className="group flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3"
           >
             <span className="relative h-8 w-8 overflow-hidden rounded-full ring-1 ring-inset ring-ink/15">
-              <Image
-                src="/img/avatar.jpg"
-                alt=""
-                fill
+              {/* A 32px chip. It was being served the 240px master, which is
+                  nine times the pixels it can show. */}
+              <Photo
+                base="avatar"
+                fallback="/img/avatar.jpg"
+                widths={[64, 96, 128]}
                 sizes="32px"
+                alt=""
+                hidden
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
               />
             </span>
@@ -151,6 +158,11 @@ export function Nav() {
         )}
         style={{ clipPath: open ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)" }}
         aria-hidden={!open}
+        /* `inert` is what actually takes the closed sheet out of the tab order
+           and off the accessibility tree. `aria-hidden` alone hid it from a
+           screen reader while leaving its links tabbable, so a keyboard user
+           could tab into a panel clipped to zero height and vanish. */
+        inert={!open}
       >
         <div className="flex h-full flex-col justify-between px-gut pb-10 pt-[calc(var(--nav-h)+3rem)]">
           <ul>
@@ -172,7 +184,11 @@ export function Nav() {
             ))}
           </ul>
           <div className="flex flex-col gap-2">
-            <a href={`mailto:${profile.email}`} className="uline w-fit text-muted">
+            <a
+              href={`mailto:${profile.email}`}
+              tabIndex={open ? 0 : -1}
+              className="uline w-fit text-muted"
+            >
               {profile.email}
             </a>
             <span className="micro text-faint">{profile.locationShort}</span>

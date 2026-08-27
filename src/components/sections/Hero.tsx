@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, ScrollTrigger, prefersReducedMotion } from "@/lib/motion";
+import { gsap, prefersReducedMotion } from "@/lib/motion";
 import { onReady } from "@/lib/ready";
 import { profile, capabilities } from "@/content/site";
 import { Magnetic } from "@/components/ui/Magnetic";
@@ -58,7 +58,13 @@ export function Hero() {
         scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: 0.6 },
       });
     }, root);
-    ScrollTrigger.refresh();
+    // No `ScrollTrigger.refresh()` here. Refreshing re-measures every trigger
+    // registered anywhere on the page, which is a forced layout of the whole
+    // document — and this one fired during the hero's entrance, the single
+    // busiest moment of the load. The trigger created just above measures
+    // itself correctly on creation, and every other section now builds its own
+    // triggers on approach (see lib/inview.ts), by which point the fonts have
+    // settled and the measurement is more accurate than this call could make it.
     return () => ctx.revert();
   }, [lit]);
 
@@ -222,21 +228,19 @@ function ScrollCue() {
 /**
  * Capability ticker. Duplicated once and translated by exactly -50%, so the
  * loop is seamless at any width without measuring anything.
+ *
+ * The movement is a CSS animation, not a tween. It used to be
+ * `gsap.to(track, { xPercent: -50, repeat: -1 })`, which keeps a GSAP tween
+ * permanently active — and an active tween keeps GSAP's ticker writing an
+ * inline transform from the main thread on every frame of the session, hero
+ * on screen or not. The keyframes version is handed straight to the
+ * compositor and is free. `prefers-reduced-motion` is handled in the
+ * stylesheet alongside every other looping animation on the site.
  */
 function CapabilityTicker({ items }: { items: string[] }) {
-  const track = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (prefersReducedMotion() || !track.current) return;
-    const tween = gsap.to(track.current, { xPercent: -50, duration: 38, ease: "none", repeat: -1 });
-    return () => {
-      tween.kill();
-    };
-  }, []);
-
   return (
     <div className="marquee-mask shrink-0 overflow-hidden border-y border-line py-4">
-      <div ref={track} className="marquee">
+      <div className="marquee marquee-run">
         {[0, 1].map((dup) => (
           <div key={dup} className="flex shrink-0 items-center" aria-hidden={dup === 1}>
             {items.map((label) => (

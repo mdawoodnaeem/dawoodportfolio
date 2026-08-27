@@ -14,14 +14,30 @@ import { cn } from "@/lib/cn";
  * Position is read from a single rAF-throttled scroll listener rather than one
  * IntersectionObserver per section — the rail needs a continuous 0–1 value for
  * the progress line anyway, so the observer would be a second source of truth.
+ *
+ * The rail is `hidden lg:block`, and the listener respects that. It used to
+ * run everywhere: on every scroll frame of every phone visit it measured all
+ * ten sections with `getBoundingClientRect()` — ten forced layouts a frame,
+ * feeding two React state updates, for a column of ticks no phone ever
+ * renders. A media query gate mounts it only where it is actually drawn.
  */
 export function ScrollRail() {
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState(0);
+  const [wide, setWide] = useState(false);
   const frame = useRef(0);
   const { scrollTo } = useSmooth();
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!wide) return;
     const read = () => {
       frame.current = 0;
       const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -47,7 +63,9 @@ export function ScrollRail() {
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame.current);
     };
-  }, []);
+  }, [wide]);
+
+  if (!wide) return null;
 
   return (
     <aside

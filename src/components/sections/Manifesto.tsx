@@ -5,6 +5,7 @@ import { gsap, prefersReducedMotion } from "@/lib/motion";
 import { manifesto } from "@/content/site";
 import { SectionHead } from "@/components/ui/Type";
 import { PortraitSlot } from "@/components/ui/Portrait";
+import { useNearViewport } from "@/lib/inview";
 
 /**
  * MANIFESTO
@@ -22,10 +23,11 @@ import { PortraitSlot } from "@/components/ui/Portrait";
  */
 export function Manifesto() {
   const root = useRef<HTMLElement>(null);
-  const words = useRef<HTMLParagraphElement>(null);
+  const words = useRef<HTMLSpanElement>(null);
+  const near = useNearViewport(root);
 
   useEffect(() => {
-    if (!root.current || prefersReducedMotion()) return;
+    if (!near || !root.current || prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
       // Sweep the gradient rather than fading each word.
       //
@@ -51,7 +53,7 @@ export function Manifesto() {
       );
     }, root);
     return () => ctx.revert();
-  }, []);
+  }, [near]);
 
   return (
     <section ref={root} id="manifesto" className="shell scroll-mt-24 py-[clamp(6rem,14vw,12rem)]">
@@ -64,14 +66,23 @@ export function Manifesto() {
           the display trim on each pulled them into one another, and with
           sentence case (which has real descenders, unlike caps) they
           overlapped outright. */}
-      <div className="mt-12 display display-trim text-d2" data-reveal data-stagger="0.09">
+      {/* This is the section's <h2>, not a plain block.
+          It always looked like one — it is the largest type in the section and
+          the thing the section is about — but it was marked up as a <div>,
+          which left the principle titles below as <h3>s hanging directly off
+          the page's single <h1> with nothing in between. Tailwind's preflight
+          strips heading margins and inherits the size, so nothing moves by a
+          pixel; the outline is simply now what the design already said it was.
+          The two lines are <span>s because a heading may only contain phrasing
+          content, and they were a <span> and a <p> before. */}
+      <h2 className="mt-12 display display-trim text-d2" data-reveal data-stagger="0.09">
         <span className="mask block">
           <span className="grad">{manifesto.statement[0]}</span>
         </span>
-        <p ref={words} className="grad-scrub block lg:pl-[7vw]">
+        <span ref={words} className="grad-scrub block lg:pl-[7vw]">
           {manifesto.statement[1]}
-        </p>
-      </div>
+        </span>
+      </h2>
 
       {/* The travelling portrait's middle stop, with the argument beside it. */}
       <div className="mt-[clamp(3rem,7vw,6rem)] grid grid-cols-12 items-center gap-y-12 lg:gap-x-10">

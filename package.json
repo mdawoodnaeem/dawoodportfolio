@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "images": "node scripts/images.mjs",
+    "images:check": "node scripts/images.mjs --check"
   },
   "allowScripts": {
     "sharp@0.34.5": true,
@@ -35,5 +37,14 @@
     "autoprefixer": "10.4.20",
     "eslint": "9.17.0",
     "eslint-config-next": "15.5.4"
-  }
+  },
+  "browserslist": [
+    "chrome >= 100",
+    "edge >= 100",
+    "firefox >= 100",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
+    "opera >= 86",
+    "not dead"
+  ]
 }

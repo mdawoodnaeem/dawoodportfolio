@@ -34,40 +34,99 @@ export function prefersReducedMotion() {
 }
 
 /**
+ * True for phones and tablets — anything driven by a finger rather than a
+ * pointing device. Several behaviours on this site exist only to answer a
+ * mouse (the custom cursor, the magnetic buttons, the scroll rail, Lenis's
+ * wheel smoothing) and every one of them costs main-thread time on a device
+ * that can never trigger them.
+ */
+export function isTouch() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(pointer: coarse)").matches ||
+    (navigator.maxTouchPoints ?? 0) > 0
+  );
+}
+
+/**
  * Reveal-on-enter.
  *
- * Deliberately just toggles a class: the transitions themselves live in CSS
- * (`.mask`, `.rise` in globals.css). That keeps GSAP out of the paint
- * path for the ~100 elements that only need to appear once, and means content
- * is still styled correctly if the bundle fails to load.
+ * One IntersectionObserver for the whole page rather than a ScrollTrigger per
+ * element. Both approaches end at the same place — a single `.is-in` class,
+ * with the transitions themselves living in CSS (`.mask`, `.rise` in
+ * globals.css) — but they cost very different amounts to get there.
+ *
+ * ScrollTrigger measures every registered element against the scroller on
+ * creation and again on every `refresh()` (a resize, a font landing, a
+ * `ScrollTrigger.refresh()` call from any other section). With ~100 reveal
+ * targets on this page that is ~100 forced synchronous layouts in a burst,
+ * during hydration, which is precisely the window a throttled mobile audit
+ * measures as blocking time.
+ *
+ * IntersectionObserver does the same geometry off the main thread and reports
+ * back asynchronously, so the identical reveal costs no layout at all. The
+ * `data-start` syntax is preserved: "top 88%" means "fire when the element's
+ * top crosses 88% of the viewport", which is a bottom root margin of -12%.
  */
 export function observeReveals(root: HTMLElement | Document = document) {
-  const targets = gsap.utils.toArray<HTMLElement>("[data-reveal]", root);
-  const triggers: ScrollTrigger[] = [];
+  if (typeof IntersectionObserver === "undefined") {
+    // No observer (very old browser): show everything immediately rather than
+    // leaving the page's content sitting at opacity 0.
+    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => el.classList.add("is-in"));
+    return () => {};
+  }
 
-  targets.forEach((el) => {
-    if (el.classList.contains("is-in")) return;
+  const targets = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]")).filter(
+    (el) => !el.classList.contains("is-in")
+  );
 
-    // Stagger children by walking the CSS transition-delay, not by animating
-    // each one — a single class flip stays cheap however many children exist.
+  // Elements are grouped by their threshold so one observer serves every
+  // element sharing a start position — in practice two observers for the
+  // whole page instead of a hundred triggers.
+  const groups = new Map<number, HTMLElement[]>();
+  for (const el of targets) {
+    const raw = el.dataset.start ?? "top 88%";
+    const pct = Number(/(\d+(?:\.\d+)?)%/.exec(raw)?.[1] ?? 88);
+    const margin = Math.round(100 - pct);
+    const list = groups.get(margin);
+    if (list) list.push(el);
+    else groups.set(margin, [el]);
+  }
+
+  const observers: IntersectionObserver[] = [];
+
+  const reveal = (el: HTMLElement) => {
+    // The stagger is applied at reveal time, not at setup. Walking every
+    // reveal block's children up front means touching several hundred inline
+    // styles before the page has finished painting; doing it here touches
+    // only the block that is actually arriving, and the delay still lands in
+    // the same style resolution as the class flip.
     const step = Number(el.dataset.stagger ?? 0);
     if (step) {
-      Array.from(el.querySelectorAll<HTMLElement>(".mask > *, .rise")).forEach((child, i) => {
-        child.style.transitionDelay = `${(i * step).toFixed(3)}s`;
-      });
+      const kids = el.querySelectorAll<HTMLElement>(".mask > *, .rise");
+      for (let i = 0; i < kids.length; i++) {
+        kids[i].style.transitionDelay = `${(i * step).toFixed(3)}s`;
+      }
     }
+    el.classList.add("is-in");
+  };
 
-    triggers.push(
-      ScrollTrigger.create({
-        trigger: el,
-        start: el.dataset.start ?? "top 88%",
-        once: true,
-        onEnter: () => el.classList.add("is-in"),
-      })
+  groups.forEach((list, margin) => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          reveal(entry.target as HTMLElement);
+          io.unobserve(entry.target);
+        }
+      },
+      { rootMargin: `0px 0px -${margin}% 0px`, threshold: 0 }
     );
+    list.forEach((el) => io.observe(el));
+    observers.push(io);
   });
 
-  return () => triggers.forEach((t) => t.kill());
+  return () => observers.forEach((io) => io.disconnect());
 }
 
 /**
@@ -79,7 +138,7 @@ export function observeReveals(root: HTMLElement | Document = document) {
  * expressed in CSS alone.
  */
 export function splitChars(text: string) {
-  return text.split("").map((c, i) => ({ c: c === " " ? " " : c, i }));
+  return text.split("").map((c, i) => ({ c: c === " " ? " " : c, i }));
 }
 
 export { gsap, ScrollTrigger };

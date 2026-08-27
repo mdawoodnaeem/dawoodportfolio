@@ -64,9 +64,12 @@ export function Playground() {
     return () => io.disconnect();
   }, [skip]);
 
-  // Feed section scroll progress to the camera rig.
+  // Feed section scroll progress to the camera rig. Gated on `mount` — the
+  // same "section is approaching" signal that fetches the three.js bundle — so
+  // the trigger's initial document measurement happens alongside it rather
+  // than during the page's first hydration pass.
   useEffect(() => {
-    if (!root.current || skip) return;
+    if (!mount || !root.current || skip) return;
     const ctx = gsap.context(() => {
       gsap.to(progress, {
         current: 1,
@@ -80,13 +83,14 @@ export function Playground() {
       });
     }, root);
     return () => ctx.revert();
-  }, [skip]);
+  }, [skip, mount]);
 
   return (
     <section
       ref={root}
       id="playground"
-      className="relative overflow-hidden py-[clamp(5rem,11vw,9rem)]"
+      data-cv="playground"
+      className="cv relative overflow-hidden py-[clamp(5rem,11vw,9rem)]"
       aria-labelledby="playground-heading"
     >
       {/* Ember bloom behind the canvas. Doing this in CSS rather than as a

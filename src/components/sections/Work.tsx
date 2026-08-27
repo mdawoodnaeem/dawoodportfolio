@@ -5,6 +5,7 @@ import { gsap, prefersReducedMotion } from "@/lib/motion";
 import { projects, type Project } from "@/content/site";
 import { ProjectVisual } from "@/components/ui/ProjectVisual";
 import { SectionHead } from "@/components/ui/Type";
+import { useNearViewport } from "@/lib/inview";
 import { cn } from "@/lib/cn";
 
 /**
@@ -27,9 +28,14 @@ import { cn } from "@/lib/cn";
 export function Work() {
   const root = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  // Fourteen ScrollTriggers — a counter and a recede timeline per plate — each
+  // of which measures the document when it is created. Built at mount they
+  // landed as one long forced layout inside hydration; built on approach they
+  // cost the same work at a moment when the main thread has nothing else to do.
+  const near = useNearViewport(root);
 
   useEffect(() => {
-    if (!root.current) return;
+    if (!near || !root.current) return;
     const ctx = gsap.context(() => {
       const cards = gsap.utils.toArray<HTMLElement>("[data-card]");
 
@@ -63,10 +69,16 @@ export function Work() {
       });
     }, root);
     return () => ctx.revert();
-  }, []);
+  }, [near]);
 
   return (
-    <section id="work" className="scroll-mt-24 py-[clamp(4rem,9vw,8rem)]">
+    <section
+      id="work"
+      /* --cv is this section's real height at each breakpoint, measured from
+         the built page. See `.cv` in globals.css. */
+      data-cv="work"
+      className="cv scroll-mt-24 py-[clamp(4rem,9vw,8rem)]"
+    >
       <div className="shell">
         <div data-reveal>
           <SectionHead n="02" label="Selected Work" className="mask" />

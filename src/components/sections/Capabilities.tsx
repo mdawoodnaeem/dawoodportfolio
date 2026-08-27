@@ -20,7 +20,11 @@ export function Capabilities() {
   const [open, setOpen] = useState(0);
 
   return (
-    <section id="capabilities" className="shell scroll-mt-24 py-[clamp(6rem,13vw,11rem)]">
+    <section
+      id="capabilities"
+      data-cv="capabilities"
+      className="cv shell scroll-mt-24 py-[clamp(6rem,13vw,11rem)]"
+    >
       <div data-reveal>
         <SectionHead n="03" label="Capabilities" className="mask" />
       </div>

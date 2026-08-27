@@ -133,7 +133,12 @@ export function Contact() {
   const year = new Date().getFullYear();
 
   return (
-    <footer ref={root} id="contact" className="relative scroll-mt-24 pt-[clamp(5rem,11vw,9rem)]">
+    <footer
+      ref={root}
+      id="contact"
+      data-cv="contact"
+      className="cv relative scroll-mt-24 pt-[clamp(5rem,11vw,9rem)]"
+    >
       <div className="shell">
         <div data-reveal>
           <SectionHead n="06" label="Contact" className="mask" />
@@ -247,7 +252,15 @@ export function Contact() {
           Two lines, not one: twenty-one characters on a single line either
           bleed off both edges or shrink to the size of a subhead. Broken after
           the given name, both lines land near the same width. */}
-      <div className="mt-[clamp(4rem,10vw,8rem)] overflow-hidden px-gut" aria-hidden="true">
+      <div
+        className="mt-[clamp(4rem,10vw,8rem)] overflow-hidden px-gut"
+        aria-hidden="true"
+        /* The ember band inside the signature is a main-thread repaint per
+           frame (see `.wordmark` in globals.css); `data-reveal` is what
+           holds it switched off until the footer is genuinely on screen. */
+        data-reveal
+        data-start="top 98%"
+      >
         <span
           ref={mark}
           className="wordmark display block text-center leading-[0.84] tracking-[-0.04em]"

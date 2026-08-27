@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { useEffect, useRef, useState } from "react";
+import { gsap, prefersReducedMotion, isTouch } from "@/lib/motion";
 
 /**
  * CURSOR
@@ -29,12 +29,27 @@ import { gsap, prefersReducedMotion } from "@/lib/motion";
  * a single stray `pointerleave` (switching tabs, a system dialog, the
  * pointer grazing the very edge of the viewport) could leave it invisible
  * for the rest of the session.
+ *
+ * None of it is mounted on a touch device. The two elements were always
+ * hidden there by `@media (pointer: coarse)`, but hidden is not absent: the
+ * idle spin is an infinite GSAP tween, and an infinite tween keeps GSAP's
+ * ticker running a frame callback for the entire session — on a phone, for a
+ * cursor that can never be seen. The gate below is deliberately a mounted
+ * state rather than a render-time check so the server and the first client
+ * render still agree; one frame later the whole thing is either there or it
+ * never appears at all.
  */
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
+  const [fine, setFine] = useState(false);
 
   useEffect(() => {
+    if (!isTouch()) setFine(true);
+  }, []);
+
+  useEffect(() => {
+    if (!fine) return;
     const d = dot.current;
     const r = ring.current;
     if (!d || !r) return;
@@ -135,7 +150,9 @@ export function Cursor() {
       document.removeEventListener("pointerleave", conceal);
       window.removeEventListener("blur", conceal);
     };
-  }, []);
+  }, [fine]);
+
+  if (!fine) return null;
 
   return (
     <>

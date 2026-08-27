@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
  */
 export function Voices() {
   return (
-    <section className="shell py-[clamp(5rem,11vw,9rem)]">
+    <section data-cv="voices" className="cv shell py-[clamp(5rem,11vw,9rem)]">
       <ul className="border-t border-line">
         {testimonials.map((t, i) => (
           <li key={t.name} className="border-b border-line">

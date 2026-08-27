@@ -530,15 +530,14 @@ export function ProjectVisual({
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const boostRef = useRef(boost);
-  const activeRef = useRef(active);
+  const engine = useRef<{ start: () => void; stop: () => void } | null>(null);
 
   boostRef.current = boost;
-  activeRef.current = active;
 
   useEffect(() => {
     const cv = canvas.current;
     if (!cv) return;
-    const g = cv.getContext("2d");
+    const g = cv.getContext("2d", { alpha: true });
     if (!g) return;
 
     const render = RENDERERS[variant];
@@ -547,6 +546,12 @@ export function ProjectVisual({
     let h = 0;
     let raf = 0;
     let t = 0;
+    let sized = false;
+    // "live" means this diagram is on screen and has drawn at least once.
+    // It is not the same as `raf`: a reduced-motion visitor gets one static
+    // frame and no loop at all, and that frame still has to be repainted when
+    // the theme changes underneath it.
+    let live = false;
     let palette: Palette = { ink: "rgba(0,0,0,.6)", faint: "rgba(0,0,0,.14)", accent: "#ff5a1f" };
 
     const syncTheme = () => {
@@ -558,48 +563,83 @@ export function ProjectVisual({
       const r = cv.getBoundingClientRect();
       w = r.width;
       h = r.height;
+      if (!w || !h) return false;
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      sized = true;
+      return true;
     };
 
     const paint = () => {
+      if (!sized && !resize()) return;
       g.clearRect(0, 0, w, h);
       render({ g, w, h, t, p: palette });
     };
 
-    syncTheme();
-    resize();
-    t = 0.6;
-    paint();
-
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      if (!activeRef.current) return;
       t += 0.016 * boostRef.current;
       paint();
     };
 
-    const ro = new ResizeObserver(() => {
-      resize();
+    /* The loop is started and stopped by the `active` effect below rather
+       than run permanently with an early return inside it.
+    
+       The early-return version still scheduled a callback every single frame,
+       for all seven diagrams, for the whole session — seven rAF wake-ups per
+       frame that did nothing but reschedule themselves. It also measured and
+       painted all seven canvases the moment they mounted, which is seven
+       forced layouts and seven full vector passes landing inside hydration.
+       Now nothing is measured or drawn until a panel is genuinely near the
+       viewport, and the frame callback stops existing the moment it leaves. */
+    const start = () => {
+      if (live) return;
+      live = true;
+      syncTheme();
+      // First frame at t = 0.6 so a diagram that has just scrolled into view
+      // opens on a settled composition rather than on its zero state.
+      if (!t) t = 0.6;
       paint();
+      if (!reduced) raf = requestAnimationFrame(loop);
+    };
+
+    const stop = () => {
+      live = false;
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    engine.current = { start, stop };
+
+    const ro = new ResizeObserver(() => {
+      sized = false;
+      if (live) paint();
     });
     ro.observe(cv);
 
     const mo = new MutationObserver(() => {
+      if (!live) return; // off-screen diagrams re-read the palette when they start
       syncTheme();
       paint();
     });
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-    if (!reduced) raf = requestAnimationFrame(loop);
-
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
+      engine.current = null;
       ro.disconnect();
       mo.disconnect();
     };
   }, [variant]);
+
+  useEffect(() => {
+    const e = engine.current;
+    if (!e) return;
+    if (active) e.start();
+    else e.stop();
+  }, [active]);
 
   return <canvas ref={canvas} className={className} aria-hidden="true" />;
 }

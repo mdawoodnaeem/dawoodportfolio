@@ -89,7 +89,11 @@ export function Pricing() {
   }, []);
 
   return (
-    <section id="pricing" className="shell scroll-mt-24 py-[clamp(6rem,13vw,11rem)]">
+    <section
+      id="pricing"
+      data-cv="pricing"
+      className="cv shell scroll-mt-24 py-[clamp(6rem,13vw,11rem)]"
+    >
       <div data-reveal>
         <SectionHead n="04" label="Engagements" className="mask" />
       </div>

@@ -245,6 +245,22 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /*
+   * The sweep only starts once the footer has actually been reached.
+   *
+   * `background-position` is not a compositable property: every frame of this
+   * animation is a style recalculation and a repaint of a 10rem gradient-
+   * clipped headline, on the main thread. Running it unconditionally meant
+   * paying that from the first millisecond of the session for a wordmark
+   * sitting several thousand pixels below the fold, which no visitor has seen
+   * and most never reach. Hanging it off the same `.is-in` flag the rest of
+   * the page's reveals use costs nothing and looks identical — by the time
+   * the signature is on screen the band is already travelling.
+   */
+  .is-in .wordmark,
+  .is-in.wordmark {
     animation: sweep 9s linear infinite;
   }
 
@@ -338,6 +354,20 @@ body {
      readable if the script never runs.
      ========================================================================== */
 
+  /*
+   * Neither of these carries `will-change` any more, and the omission is the
+   * point rather than an oversight.
+   *
+   * `will-change` is a promise to the compositor that costs a layer to keep.
+   * There are on the order of two hundred `.mask`/`.rise` elements on this
+   * page; declaring it on the selector handed every one of them its own
+   * permanently retained layer from first paint — hundreds of megabytes of
+   * backing store on a phone, and a style/layout pass that has to walk the
+   * whole set. Both properties animated here (transform and opacity) are
+   * already compositor-driven, so the browser promotes each element for the
+   * ~1s its transition is actually running and drops it again afterwards.
+   * The motion is identical; the standing cost is gone.
+   */
   .mask {
     overflow: hidden;
     display: block;
@@ -346,7 +376,6 @@ body {
     display: block;
     transform: translate3d(0, 105%, 0);
     transition: transform 1100ms var(--ease-out);
-    will-change: transform;
   }
   .is-in.mask > *,
   .is-in .mask > * {
@@ -357,7 +386,6 @@ body {
     opacity: 0;
     transform: translate3d(0, 22px, 0);
     transition: opacity 900ms var(--ease-out), transform 900ms var(--ease-out);
-    will-change: transform, opacity;
   }
   .is-in.rise,
   .is-in .rise {
@@ -427,6 +455,104 @@ body {
   }
 
   /* ==========================================================================
+     DEFERRED SECTIONS
+
+     The page is one document about eighteen screens tall on a phone, and the
+     browser used to lay out all thousand of its boxes before it could paint
+     the first one. In a throttled mobile trace that single initial layout pass
+     was 369ms of blocked main thread — the largest task on the page, and the
+     reason the hero portrait took four seconds to appear despite having
+     finished downloading in eighty milliseconds.
+
+     `content-visibility: auto` lets the browser skip the layout and paint of a
+     subtree until the visitor is close to it. Nothing about the section
+     changes: it is the same markup with the same styles, and the moment it
+     comes near the viewport it is laid out and painted exactly as before. What
+     changes is *when* — first paint now measures the fold, not the footer.
+
+     `contain-intrinsic-size` is what keeps the scrollbar honest while a
+     section is skipped: each one declares the height it actually occupies (via
+     --cv, measured per breakpoint at the section itself), so the page is the
+     right length from the first frame and nothing jumps as you scroll into it.
+     The `auto` keyword means that once a section has been laid out for real,
+     its true height is remembered and used from then on.
+
+     Only sections below the fold carry this. The hero, the manifesto and the
+     about block are the travelling portrait's three stops — that card measures
+     all three slots every frame — and they are on screen early anyway.
+     ========================================================================== */
+  .cv {
+    content-visibility: auto;
+    /* `contain-intrinsic-size` describes the CONTENT box — the section's own
+       padding is added on top of it — so each placeholder subtracts the exact
+       padding expression that section is laid out with. Without that
+       subtraction every deferred section reserved ~190px more than it uses and
+       the page claimed to be a screen and a half longer than it was. */
+    contain-intrinsic-size: auto calc(var(--cv, 1000px) - var(--cv-pad, 0px));
+  }
+
+  /* Vertical padding of each deferred section, mirroring the `py-`/`pt-` utility
+     on the element itself. Kept here so the placeholder can never drift from
+     the real box: change one, change the other. */
+  [data-cv="work"] { --cv-pad: calc(2 * clamp(4rem, 9vw, 8rem)); }
+  [data-cv="capabilities"],
+  [data-cv="pricing"],
+  [data-cv="questions"] { --cv-pad: calc(2 * clamp(6rem, 13vw, 11rem)); }
+  [data-cv="voices"],
+  [data-cv="playground"] { --cv-pad: calc(2 * clamp(5rem, 11vw, 9rem)); }
+  [data-cv="contact"] { --cv-pad: clamp(5rem, 11vw, 9rem); }
+
+  /* Border-box height each section actually occupies, measured off the built
+     page at the middle of every breakpoint range. These only have to be close:
+     the `auto` keyword above means a section that has been laid out once is
+     remembered at its true height from then on, so these values are what the
+     scrollbar is built from on the very first frame and nothing else. */
+  [data-cv="work"]         { --cv: 6800px; }
+  [data-cv="capabilities"] { --cv: 1330px; }
+  [data-cv="pricing"]      { --cv: 1550px; }
+  [data-cv="voices"]       { --cv: 950px; }
+  [data-cv="questions"]    { --cv: 985px; }
+  [data-cv="playground"]   { --cv: 945px; }
+  [data-cv="contact"]      { --cv: 1130px; }
+
+  @media (min-width: 640px) {
+    [data-cv="work"]         { --cv: 6950px; }
+    [data-cv="capabilities"] { --cv: 1195px; }
+    [data-cv="pricing"]      { --cv: 1350px; }
+    [data-cv="voices"]       { --cv: 835px; }
+    [data-cv="questions"]    { --cv: 895px; }
+    [data-cv="playground"]   { --cv: 910px; }
+    [data-cv="contact"]      { --cv: 990px; }
+  }
+  @media (min-width: 768px) {
+    [data-cv="work"]         { --cv: 7850px; }
+    [data-cv="capabilities"] { --cv: 1315px; }
+    [data-cv="pricing"]      { --cv: 1160px; }
+    [data-cv="voices"]       { --cv: 800px; }
+    [data-cv="questions"]    { --cv: 895px; }
+    [data-cv="playground"]   { --cv: 935px; }
+    [data-cv="contact"]      { --cv: 1065px; }
+  }
+  @media (min-width: 1024px) {
+    [data-cv="work"]         { --cv: 4500px; }
+    [data-cv="capabilities"] { --cv: 1350px; }
+    [data-cv="pricing"]      { --cv: 1200px; }
+    [data-cv="voices"]       { --cv: 950px; }
+    [data-cv="questions"]    { --cv: 775px; }
+    [data-cv="playground"]   { --cv: 990px; }
+    [data-cv="contact"]      { --cv: 885px; }
+  }
+  @media (min-width: 1280px) {
+    [data-cv="work"]         { --cv: 5250px; }
+    [data-cv="capabilities"] { --cv: 1460px; }
+    [data-cv="pricing"]      { --cv: 1310px; }
+    [data-cv="voices"]       { --cv: 1115px; }
+    [data-cv="questions"]    { --cv: 815px; }
+    [data-cv="playground"]   { --cv: 1015px; }
+    [data-cv="contact"]      { --cv: 985px; }
+  }
+
+  /* ==========================================================================
      TRAVELLING PORTRAIT
      A fixed stage holding a two-faced card. Positions are written straight to
      the transform by rAF (see ui/Portrait.tsx) — no transition here, because
@@ -474,9 +600,28 @@ body {
      against the content. Opacity is a theme token: ink needs more of it.
      ========================================================================== */
 
+  /*
+   * The overlay is `inset: -3%`, not `inset: -50%`.
+   *
+   * The negative inset exists so the drift below never uncovers an edge, and
+   * the drift is at most 1.5% of the layer's own size. At -50% the layer was
+   * twice the viewport in each direction — four times its area — and every one
+   * of those pixels is a tiled image that has to be rasterised and then
+   * blended against the whole page underneath it, before the first frame can
+   * be shown. A 3% margin covers a 1.5% drift with room to spare and asks the
+   * compositor for roughly a quarter of the work.
+   *
+   * `will-change: transform` is deliberate here, and is not the same mistake
+   * as putting it on two hundred reveal elements: this one element genuinely
+   * animates a transform forever, so a layer of its own is exactly what it
+   * wants — and it keeps each step of the drift on the compositor instead of
+   * re-blending the page on the main thread.
+   *
+   * Same tile, same 220px scale, same opacity, same blend: identical grain.
+   */
   .grain {
     position: fixed;
-    inset: -50%;
+    inset: -3%;
     z-index: 60;
     pointer-events: none;
     background-image: url("/textures/grain.webp");
@@ -491,10 +636,24 @@ body {
      7. MARQUEE
      ========================================================================== */
 
+  /*
+   * The capability ticker. This was a GSAP tween on `xPercent` with
+   * `repeat: -1`, which means GSAP's ticker held an active tween — and so ran
+   * a main-thread frame callback that wrote an inline transform — for every
+   * second of every visit, including the whole of a Lighthouse trace, and
+   * including the entire time the hero was scrolled out of sight.
+   *
+   * As a CSS animation the identical movement is handed to the compositor and
+   * costs the main thread nothing at all. The track is duplicated once and
+   * travels exactly -50%, so the loop is seamless at any width without
+   * measuring anything, exactly as before.
+   */
   .marquee {
     display: flex;
     width: max-content;
-    will-change: transform;
+  }
+  .marquee-run {
+    animation: marquee 38s linear infinite;
   }
   .marquee-mask {
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
@@ -552,6 +711,10 @@ body {
   0%        { transform: translateY(-100%); }
   60%, 100% { transform: translateY(200%); }
 }
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
 @keyframes grainshift {
   0%   { transform: translate(0, 0); }
   20%  { transform: translate(-1.5%, 1%); }
@@ -605,8 +768,15 @@ html.theme-switching::view-transition-new(root) {
     transform: none !important;
   }
   .grain,
-  .wordmark {
-    animation: none;
+  .wordmark,
+  /* Explicit, because the blanket 0.01ms/1-iteration rule above would not
+     stop the ticker — it would fast-forward it to its final -50% and leave
+     the track parked half a screen to the left. */
+  .marquee-run {
+    animation: none !important;
+  }
+  .marquee-run {
+    transform: none !important;
   }
   /* With the sweep stopped, park the signature on its solid-ink stop rather
      than wherever the animation happened to freeze. */
