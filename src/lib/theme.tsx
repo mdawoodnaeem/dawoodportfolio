@@ -44,7 +44,7 @@ export function ThemeScript() {
    * the document. The other grade loads normally, and is in cache long before
    * anyone reaches the toggle.
    */
-  const code = `(function(){var t;try{var s=localStorage.getItem("${KEY}");var m=window.matchMedia("(prefers-color-scheme: light)").matches;t=s==="ink"||s==="paper"?s:(m?"paper":"ink");}catch(e){t="ink";}document.documentElement.setAttribute("data-theme",t);try{var w=[384,512,640,768,900];var l=document.createElement("link");l.rel="preload";l.as="image";l.type="image/avif";l.imageSrcset=w.map(function(x){return "/img/gen/portrait-"+t+"-"+x+".avif "+x+"w"}).join(", ");l.imageSizes="(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";l.fetchPriority="high";document.head.appendChild(l);}catch(e){}})();`;
+  const code = `(function(){var t;try{var s=localStorage.getItem("${KEY}");var m=window.matchMedia("(prefers-color-scheme: light)").matches;t=s==="ink"||s==="paper"?s:(m?"paper":"ink");}catch(e){t="ink";}var d=document.documentElement;d.setAttribute("data-theme",t);d.classList.add("solo-grade");try{var w=[384,448,544,640,768,900];var l=document.createElement("link");l.rel="preload";l.as="image";l.type="image/avif";l.imageSrcset=w.map(function(x){return "/img/gen/portrait-"+t+"-"+x+".avif "+x+"w"}).join(", ");l.imageSizes="(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";l.fetchPriority="high";document.head.appendChild(l);}catch(e){}})();`;
   return <script dangerouslySetInnerHTML={{ __html: code }} />;
 }
 
@@ -57,7 +57,55 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (current === "ink" || current === "paper") setTheme(current);
   }, []);
 
+  /**
+   * Put the alternate portrait grade back into the document once the page has
+   * loaded, so the theme toggle stays an instant cross-fade between two images
+   * that are already there.
+   *
+   * The release happens on `load` and not a moment later. `load` is precisely
+   * the point at which every resource the page is actually rendering has
+   * arrived — including the portrait grade the visitor is looking at — so it
+   * is the earliest instant at which fetching the other one is free, and the
+   * shortest possible window in which someone could reach the toggle before
+   * its image is on its way. Waiting for an idle slot on top of that bought
+   * nothing and left the window open for seconds longer.
+   */
+  useEffect(() => {
+    let timer = 0;
+    const release = () => {
+      const root = document.documentElement;
+      if (!root.classList.contains("solo-grade")) return;
+      root.classList.remove("solo-grade");
+      // A lazy image that has only just stopped being `display: none` will not
+      // start until its next layout; this makes it start now.
+      requestAnimationFrame(() => {
+        document
+          .querySelectorAll<HTMLImageElement>("img.img-ink, img.img-paper")
+          .forEach((img) => {
+            if (!img.complete) img.loading = "eager";
+          });
+      });
+    };
+
+    if (document.readyState === "complete") {
+      timer = window.setTimeout(release, 0);
+    } else {
+      window.addEventListener("load", release, { once: true });
+      // Belt and braces: a stalled sub-resource must not hold the alternate
+      // grade out of the document indefinitely.
+      timer = window.setTimeout(release, 5000);
+    }
+    return () => {
+      window.removeEventListener("load", release);
+      clearTimeout(timer);
+    };
+  }, []);
+
   const apply = useCallback((next: Theme) => {
+    // If the toggle is reached before the load event has released the gate,
+    // release it here — the grade being switched to must be in the document
+    // before the cross-fade starts.
+    document.documentElement.classList.remove("solo-grade");
     document.documentElement.setAttribute("data-theme", next);
     setTheme(next);
     try {
@@ -71,6 +119,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     (origin?: { x: number; y: number }) => {
       const next: Theme = theme === "ink" ? "paper" : "ink";
       const root = document.documentElement;
+      root.classList.remove("solo-grade");
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       // @ts-expect-error - startViewTransition is not in lib.dom yet

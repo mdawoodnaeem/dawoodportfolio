@@ -33,6 +33,7 @@ export function Photo({
   priority = false,
   className,
   hidden = false,
+  themed = false,
 }: {
   /** Basename inside /img/gen, without width or extension. */
   base: string;
@@ -51,6 +52,26 @@ export function Photo({
   className?: string;
   /** Purely decorative duplicate (the off-theme grade). */
   hidden?: boolean;
+  /**
+   * This image may be switched off by the theme (see `.solo-grade` in
+   * globals.css), and must not be fetched while it is.
+   *
+   * `display: none` alone does not stop a browser downloading an image —
+   * verified, not assumed. `loading="lazy"` does, but only in combination:
+   * a lazy image inside a hidden subtree is never near the viewport, so it
+   * is never requested; a lazy image that IS in the viewport is requested
+   * immediately, at the first layout. So the pair gives exactly the wanted
+   * behaviour — the grade the visitor is looking at loads at once, the grade
+   * they are not does not load at all.
+   *
+   * The LCP image being `lazy` would normally be a mistake, because the
+   * preload scanner skips lazy images and discovers them late. That does not
+   * apply here: the theme script in <head> emits an explicit high-priority
+   * preload for the exact grade about to be shown, so its bytes are already
+   * in flight before the <img> is even parsed, and the tag resolves straight
+   * out of cache.
+   */
+  themed?: boolean;
 }) {
   const set = (ext: string) =>
     widths.map((w) => `/img/gen/${base}-${w}.${ext} ${w}w`).join(", ");
@@ -66,7 +87,7 @@ export function Photo({
         src={fallback}
         alt={alt}
         {...(hidden ? { "aria-hidden": "true" as const } : null)}
-        loading={priority ? "eager" : "lazy"}
+        loading={priority && !themed ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}
         /* `decoding="async"` is right for everything the page can afford to
            show late — it lets the browser paint around an image rather than

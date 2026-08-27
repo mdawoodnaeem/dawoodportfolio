@@ -433,6 +433,32 @@ body {
   [data-theme="paper"] .img-ink { opacity: 0; }
   [data-theme="paper"] .img-paper { opacity: 1; }
 
+  /*
+   * SOLO GRADE — the off-theme portrait is not in the document until the page
+   * has finished loading.
+   *
+   * `.solo-grade` is put on <html> by the theme script in <head>, before a
+   * single pixel is painted, and taken off again once the load event has been
+   * and gone (and immediately, if the visitor reaches for the theme toggle
+   * first). While it is on, the grade the current theme is not showing is
+   * `display: none`; paired with `loading="lazy"` on both images, that is what
+   * stops the browser fetching it.
+   *
+   * Why it matters: the two grades are the same photograph at the same size,
+   * so they are the same weight, and the fold waits on whichever one the theme
+   * has chosen. Loading both put ~33KB of invisible image directly in front of
+   * ~33KB of visible one on a phone connection — measurably, most of a second
+   * of Largest Contentful Paint spent downloading a picture nobody sees.
+   *
+   * Nothing about the theme switch changes: by the time the class comes off,
+   * the alternate grade is in the document and warmed, so the swap is still a
+   * cross-fade between two images that are both already there.
+   */
+  .solo-grade:not([data-theme="paper"]) .img-paper,
+  .solo-grade[data-theme="paper"] .img-ink {
+    display: none;
+  }
+
   /* ==========================================================================
      LIVING BACKDROP
      One fixed WebGL layer behind everything. It sits above the flat page

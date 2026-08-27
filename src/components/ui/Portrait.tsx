@@ -22,7 +22,7 @@ import { profile } from "@/content/site";
  */
 const PORTRAIT_SIZES =
   "(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";
-const PORTRAIT_WIDTHS = [384, 512, 640, 768, 900];
+const PORTRAIT_WIDTHS = [384, 448, 544, 640, 768, 900];
 
 /* ==========================================================================
    TRAVELLING PORTRAIT
@@ -112,7 +112,14 @@ function PhotoFace({ priority = false }: { priority?: boolean }) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-panel">
       {/* Both grades ship; CSS picks one per theme, so neither mode is ever
-          looking at an image lit for the other. */}
+          looking at an image lit for the other — and until the page has
+          finished loading, only the grade actually on screen is fetched at
+          all (see `themed` on Photo, and `.solo-grade` in globals.css).
+          Downloading the off-theme copy alongside it was costing the fold
+          most of a second: the two are the same size, they were both marked
+          high priority, and whichever happened to be first in the markup won
+          the connection — so half the time the image the page was waiting on
+          queued behind the one nobody could see. */}
       <Photo
         base="portrait-ink"
         fallback="/img/portrait-ink.jpg"
@@ -120,6 +127,7 @@ function PhotoFace({ priority = false }: { priority?: boolean }) {
         sizes={PORTRAIT_SIZES}
         alt={`${profile.name}, ${profile.role}`}
         priority={priority}
+        themed
         className="img-ink object-cover object-[50%_16%] transition-opacity duration-500"
       />
       <Photo
@@ -130,6 +138,7 @@ function PhotoFace({ priority = false }: { priority?: boolean }) {
         alt=""
         hidden
         priority={priority}
+        themed
         className="img-paper object-cover object-[50%_16%] transition-opacity duration-500"
       />
       <div className="pointer-events-none absolute inset-0 rounded-panel ring-1 ring-inset ring-ink/10" />

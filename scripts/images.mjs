@@ -38,8 +38,12 @@ const JOBS = [
   // The portrait is never displayed wider than 384 CSS px (24rem at xl), and
   // never wider than 304 below lg. This ladder covers 1x through 3x across
   // that whole range without ever sending a phone the 900px master.
-  { src: "img/portrait-ink.jpg", base: "portrait-ink", widths: [384, 512, 640, 768, 900] },
-  { src: "img/portrait-paper.jpg", base: "portrait-paper", widths: [384, 512, 640, 768, 900] },
+  // The steps are deliberately close together through the middle of the range.
+  // A phone at 412 CSS px with a 1.75x screen needs exactly 532 device pixels
+  // for this box; with a coarse ladder the browser had to round up to 640 and
+  // download a third more image than it could draw. 544 is the step that fits.
+  { src: "img/portrait-ink.jpg", base: "portrait-ink", widths: [384, 448, 544, 640, 768, 900] },
+  { src: "img/portrait-paper.jpg", base: "portrait-paper", widths: [384, 448, 544, 640, 768, 900] },
   // The nav avatar is a 32px chip: 2x and 3x, plus one spare.
   { src: "img/avatar.jpg", base: "avatar", widths: [64, 96, 128] },
 ];
