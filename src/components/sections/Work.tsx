@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotionOnScroll, prefersReducedMotion } from "@/lib/motion";
 import { projects, type Project } from "@/content/site";
 import { ProjectVisual } from "@/components/ui/ProjectVisual";
 import { SectionHead } from "@/components/ui/Type";
@@ -36,7 +36,11 @@ export function Work() {
 
   useEffect(() => {
     if (!near || !root.current) return;
-    const ctx = gsap.context(() => {
+    let ctx: { revert: () => void } | undefined;
+    let dead = false;
+    void loadMotionOnScroll().then(({ gsap }) => {
+      if (dead || !root.current) return;
+      ctx = gsap.context(() => {
       const cards = gsap.utils.toArray<HTMLElement>("[data-card]");
 
       cards.forEach((card, i) => {
@@ -67,8 +71,12 @@ export function Work() {
         recede.fromTo(inner, { scale: 1 }, { scale: 0.94, ease: "none" }, 0);
         if (scrim) recede.fromTo(scrim, { opacity: 0 }, { opacity: 0.3, ease: "none" }, 0);
       });
-    }, root);
-    return () => ctx.revert();
+      }, root);
+    });
+    return () => {
+      dead = true;
+      ctx?.revert();
+    };
   }, [near]);
 
   return (

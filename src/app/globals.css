@@ -745,6 +745,57 @@ body {
   }
 }
 
+/* ==========================================================================
+   INTRO CURTAIN
+
+   The same three-beat choreography the timeline always played — the counter
+   and its rule filling, the pair fading out, the curtain leaving upward — as
+   CSS keyframes rather than a GSAP timeline.
+
+   The point is not that CSS is cheaper per frame (it is, but the curtain is
+   one element). It is that needing GSAP *at this instant* was the only reason
+   GSAP had to be in the page's first chunk at all: everything else it drives
+   is scroll- or pointer-linked and cannot fire until the visitor has seen the
+   page. Moving these three beats off it lets the library load on demand, which
+   takes 47KB and a second of script bootup off the critical path.
+
+   The easings are GSAP's own curves written as their bezier equivalents:
+   power2.inOut, power2.out, and the house expo-out already used everywhere
+   else on the site. `--intro-k` scales the whole thing exactly the way the
+   timeline's PACE factor did.
+   ========================================================================== */
+@keyframes intro-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes intro-dim {
+  to { opacity: 0; }
+}
+@keyframes intro-lift {
+  to { transform: translateY(-100%); }
+}
+
+.intro-bar {
+  transform: scaleX(0);
+  animation: intro-fill calc(1.35s * var(--intro-k)) cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
+}
+.intro-meta {
+  animation: intro-dim calc(0.4s * var(--intro-k)) cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    calc(1.35s * var(--intro-k)) forwards;
+}
+.intro-curtain {
+  animation: intro-lift calc(1.05s * var(--intro-k)) var(--ease-out)
+    calc(1.65s * var(--intro-k)) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-bar,
+  .intro-meta,
+  .intro-curtain {
+    animation: none !important;
+  }
+}
+
 /* Footer signature: the ember band travelling through the name. */
 @keyframes sweep {
   from { background-position: 130% 50%; }

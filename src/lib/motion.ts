@@ -9,11 +9,51 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  * One registration point, one easing vocabulary, one reduced-motion switch.
  * Everything animated on the site pulls its timing from here so the whole
  * page shares a single sense of weight.
+ *
+ * GSAP IS IMPORTED STATICALLY, AND THAT IS DELIBERATE.
+ *
+ * It was moved to a dynamic import at one point, on the reasoning that 47KB
+ * and a second of script bootup should not sit on the critical path when
+ * nothing it drives can fire before the visitor has scrolled or moved.
+ *
+ * Measured, that made things worse, and the reason is priority rather than
+ * size. As a static import the chunk is requested at ~41ms, in the same
+ * parallel batch as everything else and at Low priority — it is finished and
+ * out of the way long before the fold needs anything. Deferred, it is
+ * requested at ~730ms instead: alone, later, and squarely on top of the window
+ * in which the hero portrait is trying to arrive. Moving work later is not the
+ * same as removing it, and a request that no longer overlaps the initial batch
+ * competes with the one request that actually matters.
+ *
+ * The call sites are still asynchronous (`loadMotion().then(...)`), which
+ * costs nothing here and keeps the option open — if the initial batch ever
+ * gets small enough that GSAP is the thing holding it up, this is the only
+ * function that has to change.
  */
+export type Motion = { gsap: typeof gsap; ScrollTrigger: typeof ScrollTrigger };
 
-// Registered once per module instance; the module is a singleton per bundle.
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
+}
+
+const motion: Motion = { gsap, ScrollTrigger };
+const ready = Promise.resolve(motion);
+
+export function loadMotion(): Promise<Motion> {
+  return ready;
+}
+
+/** Kept as a distinct name so scroll-linked call sites stay self-documenting. */
+export function loadMotionOnScroll(): Promise<Motion> {
+  return ready;
+}
+
+export function refreshTriggers() {
+  ScrollTrigger.refresh();
+}
+
+export function updateTriggers() {
+  ScrollTrigger.update();
 }
 
 /** Expo-out. Fast departure, long settle — the house curve. */
@@ -141,4 +181,4 @@ export function splitChars(text: string) {
   return text.split("").map((c, i) => ({ c: c === " " ? " " : c, i }));
 }
 
-export { gsap, ScrollTrigger };
+/** Kept for the handful of call sites that only need the easing vocabulary. */

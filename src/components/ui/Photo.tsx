@@ -97,15 +97,17 @@ export function Photo({
            The priority image gets the default (auto) and lets the browser
            decide, which in practice means it is decoded in time to be in the
            first contentful frame rather than the one after it. */
-        /* `sync` for the one image the fold is waiting on.
-           `async` (and `auto`, which behaves like it here) explicitly permits
-           the browser to put out a frame without this image in it and paint it
-           into the next one. For the LCP element that is precisely the wrong
-           permission: the portrait finishes downloading well before the intro
-           curtain mounts, but was being held back a frame and so first painted
-           on the far side of it. Decoding it synchronously puts it in the same
-           frame as the rest of the fold. */
-        decoding={priority ? "sync" : "async"}
+        /* Always async, never sync.
+           `decoding="sync"` looks like the right instruction for an LCP image
+           — decode it now, do not defer it — but it means something stronger
+           than that: the browser may not present a frame until this image is
+           decoded. On an above-the-fold image that is a render block on the
+           whole document, and a trace of the live site showed exactly that:
+           the DOM was ready at 657ms and the first pixel of anything did not
+           arrive until 6220ms, with even the intro curtain never painting.
+           The image is preloaded at high priority and is in the document from
+           the first byte; it does not need to hold the page hostage as well. */
+        decoding="async"
         className={cn("absolute inset-0 h-full w-full text-transparent", className)}
       />
     </picture>

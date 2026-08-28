@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { sections, profile } from "@/content/site";
-import { gsap } from "@/lib/motion";
+import { loadMotion } from "@/lib/motion";
 import { useTheme } from "@/lib/theme";
 import { useSmooth } from "@/lib/smooth";
 import { cn } from "@/lib/cn";
@@ -220,24 +220,29 @@ function NavLinks({ onGo }: { onGo: (id: string) => void }) {
   const pill = useRef<HTMLSpanElement>(null);
   const items = sections.filter((sec) => sec.id !== "contact");
 
+  // Hover-driven, so the animation library is fetched on the first pointer to
+  // reach the bar rather than at load. By the time anyone is aiming at a nav
+  // item it has long since arrived.
   const moveTo = (el: HTMLElement | null) => {
     const box = wrap.current;
     const p = pill.current;
     if (!box || !p) return;
-    if (!el) {
-      gsap.to(p, { opacity: 0, scale: 0.9, duration: 0.3, ease: "power2.out" });
-      return;
-    }
-    const a = el.getBoundingClientRect();
-    const b = box.getBoundingClientRect();
-    gsap.to(p, {
-      x: a.left - b.left,
-      width: a.width,
-      opacity: 1,
-      scale: 1,
-      duration: 0.45,
-      ease: "expo.out",
-      overwrite: true,
+    void loadMotion().then(({ gsap }) => {
+      if (!el) {
+        gsap.to(p, { opacity: 0, scale: 0.9, duration: 0.3, ease: "power2.out" });
+        return;
+      }
+      const a = el.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      gsap.to(p, {
+        x: a.left - b.left,
+        width: a.width,
+        opacity: 1,
+        scale: 1,
+        duration: 0.45,
+        ease: "expo.out",
+        overwrite: true,
+      });
     });
   };
 

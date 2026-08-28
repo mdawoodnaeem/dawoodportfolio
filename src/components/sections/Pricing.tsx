@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotion, prefersReducedMotion } from "@/lib/motion";
 import { tiers, profile } from "@/content/site";
 import { SectionHead } from "@/components/ui/Type";
 import { Magnetic } from "@/components/ui/Magnetic";
@@ -48,19 +48,25 @@ export function Pricing() {
     }
 
     const counter = { v: shown.current };
-    const tween = gsap.to(counter, {
+    let tween: { kill: () => void } | undefined;
+    let dead = false;
+    void loadMotion().then(({ gsap }) => {
+      if (dead) return;
+      tween = gsap.to(counter, {
       v: to,
       duration: 0.7,
       ease: "power3.out",
       onUpdate: () => {
         el.textContent = `$${Math.round(counter.v).toLocaleString("en-US")}`;
       },
-      onComplete: () => {
-        shown.current = to;
-      },
+        onComplete: () => {
+          shown.current = to;
+        },
+      });
     });
     return () => {
-      tween.kill();
+      dead = true;
+      tween?.kill();
     };
   }, [tier.price]);
 
@@ -68,13 +74,19 @@ export function Pricing() {
   useEffect(() => {
     if (!listRef.current || prefersReducedMotion()) return;
     const rows = listRef.current.querySelectorAll("li");
-    const tween = gsap.fromTo(
-      rows,
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.5, stagger: 0.035, ease: "expo.out", overwrite: true }
-    );
+    let tween: { kill: () => void } | undefined;
+    let dead = false;
+    void loadMotion().then(({ gsap }) => {
+      if (dead) return;
+      tween = gsap.fromTo(
+        rows,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.035, ease: "expo.out", overwrite: true }
+      );
+    });
     return () => {
-      tween.kill();
+      dead = true;
+      tween?.kill();
     };
   }, [active]);
 

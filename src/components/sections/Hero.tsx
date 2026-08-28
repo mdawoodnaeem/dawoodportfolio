@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotionOnScroll, prefersReducedMotion } from "@/lib/motion";
 import { onReady } from "@/lib/ready";
 import { profile, capabilities } from "@/content/site";
 import { Magnetic } from "@/components/ui/Magnetic";
@@ -48,7 +48,11 @@ export function Hero() {
 
   useEffect(() => {
     if (!lit || !root.current || prefersReducedMotion()) return;
-    const ctx = gsap.context(() => {
+    let ctx: { revert: () => void } | undefined;
+    let dead = false;
+    void loadMotionOnScroll().then(({ gsap }) => {
+      if (dead || !root.current) return;
+      ctx = gsap.context(() => {
       // The fold drifts up and dims as it leaves, so the manifesto arrives on
       // a clean page rather than sliding over a busy one.
       gsap.to(type.current, {
@@ -56,8 +60,9 @@ export function Hero() {
         opacity: 0.12,
         ease: "none",
         scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: 0.6 },
-      });
-    }, root);
+        });
+      }, root);
+    });
     // No `ScrollTrigger.refresh()` here. Refreshing re-measures every trigger
     // registered anywhere on the page, which is a forced layout of the whole
     // document — and this one fired during the hero's entrance, the single
@@ -65,7 +70,10 @@ export function Hero() {
     // itself correctly on creation, and every other section now builds its own
     // triggers on approach (see lib/inview.ts), by which point the fonts have
     // settled and the measurement is more accurate than this call could make it.
-    return () => ctx.revert();
+    return () => {
+      dead = true;
+      ctx?.revert();
+    };
   }, [lit]);
 
   return (

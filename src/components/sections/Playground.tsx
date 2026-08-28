@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotionOnScroll, prefersReducedMotion } from "@/lib/motion";
 import { hasWeakGPU } from "@/lib/gl";
 import { SectionHead } from "@/components/ui/Type";
 
@@ -70,7 +70,11 @@ export function Playground() {
   // than during the page's first hydration pass.
   useEffect(() => {
     if (!mount || !root.current || skip) return;
-    const ctx = gsap.context(() => {
+    let ctx: { revert: () => void } | undefined;
+    let dead = false;
+    void loadMotionOnScroll().then(({ gsap }) => {
+      if (dead || !root.current) return;
+      ctx = gsap.context(() => {
       gsap.to(progress, {
         current: 1,
         ease: "none",
@@ -81,8 +85,12 @@ export function Playground() {
           scrub: true,
         },
       });
-    }, root);
-    return () => ctx.revert();
+      }, root);
+    });
+    return () => {
+      dead = true;
+      ctx?.revert();
+    };
   }, [skip, mount]);
 
   return (

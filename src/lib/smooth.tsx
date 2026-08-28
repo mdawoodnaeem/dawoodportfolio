@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { gsap, ScrollTrigger, observeReveals, prefersReducedMotion, isTouch } from "./motion";
+import { refreshTriggers, updateTriggers, observeReveals, prefersReducedMotion, isTouch } from "./motion";
 
 /**
  * SMOOTH SCROLL
@@ -54,7 +54,10 @@ export function SmoothProvider({ children }: { children: React.ReactNode }) {
     let disposed = false;
     let cleanup: (() => void) | null = null;
 
-    import("lenis").then(({ default: Lenis }) => {
+    // Lenis only — no animation library. This branch is skipped on touch
+    // anyway, but even on a pointer device smooth scrolling has no reason to
+    // wait for, or to drag in, GSAP.
+    void import("lenis").then(({ default: Lenis }) => {
       if (disposed) return;
       const instance = new Lenis({
         duration: 1.1,
@@ -67,14 +70,17 @@ export function SmoothProvider({ children }: { children: React.ReactNode }) {
       });
       lenis.current = instance as unknown as LenisLike;
 
-      instance.on("scroll", ScrollTrigger.update);
+      instance.on("scroll", updateTriggers);
 
-      const tick = (time: number) => instance.raf(time * 1000);
-      gsap.ticker.add(tick);
-      gsap.ticker.lagSmoothing(0);
+      let frame = 0;
+      const tick = (time: number) => {
+        instance.raf(time);
+        frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
 
       cleanup = () => {
-        gsap.ticker.remove(tick);
+        cancelAnimationFrame(frame);
         instance.destroy();
         lenis.current = null;
       };
@@ -99,7 +105,7 @@ export function SmoothProvider({ children }: { children: React.ReactNode }) {
     // webfont has changed every measurement on the page. One refresh on the
     // load event covers it; `document.fonts.ready` used to add a second,
     // earlier one, which forced the same full layout twice.
-    const refresh = () => ScrollTrigger.refresh();
+    const refresh = () => refreshTriggers();
     window.addEventListener("load", refresh);
     return () => {
       window.removeEventListener("load", refresh);

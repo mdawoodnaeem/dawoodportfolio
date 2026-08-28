@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion, isTouch } from "@/lib/motion";
+import { loadMotion, prefersReducedMotion, isTouch } from "@/lib/motion";
 
 /**
  * CURSOR
@@ -54,9 +54,54 @@ export function Cursor() {
     const r = ring.current;
     if (!d || !r) return;
 
-    const reduced = prefersReducedMotion();
+    // Nothing is fetched until a mouse actually moves. The cursor is invisible
+    // until its first `pointermove` regardless, so loading the animation
+    // library before one has happened buys nothing and costs it on the
+    // critical path — including on an audit, which never moves a pointer.
+    let dispose: (() => void) | undefined;
+    let dead = false;
 
-    gsap.set([d, r], { xPercent: -50, yPercent: -50, opacity: 0 });
+    const arm = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+      window.removeEventListener("pointermove", arm);
+      void loadMotion().then(({ gsap }) => {
+        if (dead) return;
+        dispose = attach(gsap, d, r);
+        // Replay the move that armed it, so the dot does not sit at the origin
+        // waiting for a second one.
+        window.dispatchEvent(new PointerEvent("pointermove", e));
+      });
+    };
+    window.addEventListener("pointermove", arm, { passive: true });
+
+    return () => {
+      dead = true;
+      window.removeEventListener("pointermove", arm);
+      dispose?.();
+    };
+  }, [fine]);
+
+  if (!fine) return null;
+
+  return (
+    <>
+      <div ref={ring} className="cursor-ring" aria-hidden="true" />
+      <div ref={dot} className="cursor-dot" aria-hidden="true" />
+    </>
+  );
+}
+
+/**
+ * Everything that actually needs the animation library, kept in one function
+ * so the component above can stay synchronous and the library can arrive
+ * whenever it arrives — a cursor that starts a few hundred milliseconds after
+ * the page is interactive is a cursor nobody has moved yet.
+ */
+function attach(gsap: Awaited<ReturnType<typeof loadMotion>>["gsap"], d: HTMLDivElement, r: HTMLDivElement) {
+
+  const reduced = prefersReducedMotion();
+
+  gsap.set([d, r], { xPercent: -50, yPercent: -50, opacity: 0 });
 
     const dx = gsap.quickTo(d, "x", { duration: 0.12, ease: "power3" });
     const dy = gsap.quickTo(d, "y", { duration: 0.12, ease: "power3" });
@@ -150,14 +195,4 @@ export function Cursor() {
       document.removeEventListener("pointerleave", conceal);
       window.removeEventListener("blur", conceal);
     };
-  }, [fine]);
-
-  if (!fine) return null;
-
-  return (
-    <>
-      <div ref={ring} className="cursor-ring" aria-hidden="true" />
-      <div ref={dot} className="cursor-dot" aria-hidden="true" />
-    </>
-  );
 }

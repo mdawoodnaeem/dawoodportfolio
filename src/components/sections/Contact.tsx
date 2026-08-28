@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotionOnScroll, prefersReducedMotion } from "@/lib/motion";
 import { profile } from "@/content/site";
 import { Magnetic } from "@/components/ui/Magnetic";
 import { SectionHead, Availability } from "@/components/ui/Type";
@@ -114,7 +114,11 @@ export function Contact() {
 
   useEffect(() => {
     if (!root.current || prefersReducedMotion()) return;
-    const ctx = gsap.context(() => {
+    let ctx: { revert: () => void } | undefined;
+    let dead = false;
+    void loadMotionOnScroll().then(({ gsap }) => {
+      if (dead || !root.current) return;
+      ctx = gsap.context(() => {
       // Drift is deliberately small now. The old ±6% was tuned for a watermark
       // that was meant to bleed off both edges; the name has to stay whole.
       gsap.fromTo(
@@ -125,9 +129,13 @@ export function Contact() {
           ease: "none",
           scrollTrigger: { trigger: root.current, start: "top bottom", end: "bottom bottom", scrub: 0.8 },
         }
-      );
-    }, root);
-    return () => ctx.revert();
+        );
+      }, root);
+    });
+    return () => {
+      dead = true;
+      ctx?.revert();
+    };
   }, []);
 
   const year = new Date().getFullYear();

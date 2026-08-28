@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap } from "@/lib/motion";
+import { loadMotion } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 /**
@@ -36,12 +36,16 @@ export function Magnetic({
     const r = el.getBoundingClientRect();
     const x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
     const y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-    gsap.to(el, { x: x * strength, y: y * strength * 0.6, duration: 0.6, ease: "power3.out" });
-    gsap.to(label.current, { x: x * strength * 0.35, y: y * strength * 0.25, duration: 0.6, ease: "power3.out" });
+    void loadMotion().then(({ gsap }) => {
+      gsap.to(el, { x: x * strength, y: y * strength * 0.6, duration: 0.6, ease: "power3.out" });
+      gsap.to(label.current, { x: x * strength * 0.35, y: y * strength * 0.25, duration: 0.6, ease: "power3.out" });
+    });
   };
 
   const reset = () => {
-    gsap.to([shell.current, label.current], { x: 0, y: 0, duration: 1, ease: "elastic.out(1, 0.55)" });
+    void loadMotion().then(({ gsap }) => {
+      gsap.to([shell.current, label.current], { x: 0, y: 0, duration: 1, ease: "elastic.out(1, 0.55)" });
+    });
   };
 
   const Tag = as as "button";

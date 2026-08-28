@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { loadMotionOnScroll, prefersReducedMotion } from "@/lib/motion";
 import { manifesto } from "@/content/site";
 import { SectionHead } from "@/components/ui/Type";
 import { PortraitSlot } from "@/components/ui/Portrait";
@@ -28,7 +28,11 @@ export function Manifesto() {
 
   useEffect(() => {
     if (!near || !root.current || prefersReducedMotion()) return;
-    const ctx = gsap.context(() => {
+    let ctx: { revert: () => void } | undefined;
+    let dead = false;
+    void loadMotionOnScroll().then(({ gsap }) => {
+      if (dead || !root.current) return;
+      ctx = gsap.context(() => {
       // Sweep the gradient rather than fading each word.
       //
       // This was a per-word opacity scrub. Once the line became gradient-filled
@@ -50,9 +54,13 @@ export function Manifesto() {
             scrub: 0.8,
           },
         }
-      );
-    }, root);
-    return () => ctx.revert();
+        );
+      }, root);
+    });
+    return () => {
+      dead = true;
+      ctx?.revert();
+    };
   }, [near]);
 
   return (
