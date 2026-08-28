@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 import { ThemeProvider, ThemeScript } from "@/lib/theme";
@@ -30,25 +30,53 @@ import { profile } from "@/content/site";
  * covers body copy, subheads and the condensed micro labels. It shares
  * Bricolage's grotesk skeleton, so the page reads as one voice at two volumes.
  *
- * Both are self-hosted by next/font at build time: no runtime request to a
- * font CDN, no layout shift, no third-party dependency at all.
+ * Both are self-hosted at build time: no runtime request to a font CDN, no
+ * layout shift, no third-party dependency at all.
+ *
+ * SUBSET, NOT SIMPLIFIED.
+ *
+ * These are the same two variable faces, with every axis intact — Bricolage
+ * still carries opsz 12-96, wght 200-800 and wdth 75-100; Archivo still
+ * carries wght 100-900 and wdth 62-125 — so `font-optical-sizing` still tunes
+ * the drawing with size and every `font-variation-settings` rule in
+ * globals.css still resolves exactly as before. What has been removed is the
+ * ~100 glyphs per face that this site never renders.
+ *
+ * It matters more than it sounds. Google's `latin` cut of these two faces is
+ * 216KB, and a trace of the live site shows nothing paints until it has
+ * arrived: on the connection a mobile audit simulates, that is over a second
+ * of the critical path spent on outlines for characters the page does not
+ * contain. The subset is built from the characters the site actually renders,
+ * collected off the built pages in both themes with every accordion open, plus
+ * the whole printable ASCII range and the usual typographic punctuation as a
+ * margin (scripts/fonts.mjs).
+ *
+ * The fallback metric overrides below are the ones Google's own cut produced,
+ * pinned explicitly so the no-font-yet frame is laid out identically and CLS
+ * stays at zero.
  */
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  axes: ["opsz", "wdth"],
+const display = localFont({
+  src: "./fonts/bricolage-grotesque-latin.woff2",
+  weight: "200 800",
+  style: "normal",
+  declarations: [{ prop: "font-stretch", value: "75% 100%" }],
   variable: "--font-display",
   display: "swap",
+  // Next's own computed fallback is switched off in favour of the pinned
+  // metrics in globals.css, so the pre-swap frame matches the original exactly.
+  adjustFontFallback: false,
+  fallback: ["Bricolage Grotesque Fallback", "system-ui", "sans-serif"],
 });
 
-const sans = Archivo({
-  subsets: ["latin"],
-  axes: ["wdth"],
-  // No italic cut is requested, because nothing on the site sets one — the
-  // display face carries no italic by design, and the single <cite> that would
-  // have inherited one is explicitly `not-italic`. Asking for the style built a
-  // second variable font into the output for nobody.
+const sans = localFont({
+  src: "./fonts/archivo-latin.woff2",
+  weight: "100 900",
+  style: "normal",
+  declarations: [{ prop: "font-stretch", value: "62% 125%" }],
   variable: "--font-sans",
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Archivo Fallback", "system-ui", "sans-serif"],
 });
 
 const url = "https://dawood.dev";

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "images": "node scripts/images.mjs",
-    "images:check": "node scripts/images.mjs --check"
+    "images:check": "node scripts/images.mjs --check",
+    "fonts": "node scripts/fonts.mjs"
   },
   "allowScripts": {
     "sharp@0.34.5": true,

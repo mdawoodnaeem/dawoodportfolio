@@ -3,6 +3,38 @@
 @tailwind utilities;
 
 /* ==========================================================================
+   0. FONT FALLBACK METRICS
+
+   These two faces are served as subsets (see app/layout.tsx). Subsetting does
+   not change a glyph, but it does change what `next/font` computes for the
+   fallback's `size-adjust`, because that number is derived from the average
+   advance width across the glyphs present — a different set of glyphs, a
+   different average.
+
+   That average governs how the page is laid out in the moment before the
+   webfont arrives, so letting it drift would mean the pre-swap frame no longer
+   matched the one this design was built against. The values below are the ones
+   Google's own full cut produced, pinned by hand so that frame is identical
+   and the swap moves nothing.
+   ========================================================================== */
+@font-face {
+  font-family: "Bricolage Grotesque Fallback";
+  src: local("Arial");
+  ascent-override: 88.21%;
+  descent-override: 25.61%;
+  line-gap-override: 0%;
+  size-adjust: 105.43%;
+}
+@font-face {
+  font-family: "Archivo Fallback";
+  src: local("Arial");
+  ascent-override: 88.96%;
+  descent-override: 21.28%;
+  line-gap-override: 0%;
+  size-adjust: 98.70%;
+}
+
+/* ==========================================================================
    1. THEME TOKENS
    Two complete, independently designed palettes.
 
