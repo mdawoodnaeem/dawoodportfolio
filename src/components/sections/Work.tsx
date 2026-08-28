@@ -74,10 +74,20 @@ export function Work() {
   return (
     <section
       id="work"
-      /* --cv is this section's real height at each breakpoint, measured from
-         the built page. See `.cv` in globals.css. */
-      data-cv="work"
-      className="cv scroll-mt-24 py-[clamp(4rem,9vw,8rem)]"
+      /* Deliberately NOT `content-visibility: auto`, unlike the static sections
+         further down.
+
+         Skipping a subtree skips its layout, and a <canvas> with no layout has
+         no size: the seven project diagrams here measure their own box before
+         they draw, so a diagram whose plate was still skipped when it came into
+         view measured nothing, kept the browser's default 300x150 backing store
+         and painted nothing at all — a blank panel where the drawing should be,
+         on exactly the fast flick that made containment look worth having. The
+         deck's scrubbed timelines fail from the other end: they measure the
+         section to know where each plate starts receding.
+
+         A saving is not worth a section that can render empty. */
+      className="scroll-mt-24 py-[clamp(4rem,9vw,8rem)]"
     >
       <div className="shell">
         <div data-reveal>
@@ -136,11 +146,17 @@ function Plate({ project: p, i, total }: { project: Project; i: number; total: n
   const flip = i % 2 === 1;
 
   // Only run a diagram's frame loop while its plate is near the viewport.
+  //
+  // A full viewport of margin either side, not a quarter: the margin is the
+  // head start the canvas gets to measure itself and lay down its first frame,
+  // and a quarter of a screen is less than one hard thumb-flick. A screen's
+  // worth means the drawing is finished well before the plate carrying it is
+  // anywhere near being looked at.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(([e]) => setSeen(e.isIntersecting), {
-      rootMargin: "25% 0px 25% 0px",
+      rootMargin: "100% 0px 100% 0px",
     });
     io.observe(el);
     return () => io.disconnect();

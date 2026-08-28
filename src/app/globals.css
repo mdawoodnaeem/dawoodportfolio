@@ -503,9 +503,13 @@ body {
      The `auto` keyword means that once a section has been laid out for real,
      its true height is remembered and used from then on.
 
-     Only sections below the fold carry this. The hero, the manifesto and the
-     about block are the travelling portrait's three stops — that card measures
-     all three slots every frame — and they are on screen early anyway.
+     Only plain, static sections carry this. The hero, manifesto and about
+     block are the travelling portrait's three stops, and the work deck, the
+     playground and the footer are all excluded for a harder reason: every one
+     of them either draws into a <canvas> sized from its own box, or drives a
+     scroll-scrubbed timeline measured against it. Skipping layout takes both
+     of those measurements away, and the result is a blank diagram or a
+     mis-timed scrub. Containment is only safe where nothing measures itself.
      ========================================================================== */
   .cv {
     content-visibility: auto;
@@ -520,62 +524,44 @@ body {
   /* Vertical padding of each deferred section, mirroring the `py-`/`pt-` utility
      on the element itself. Kept here so the placeholder can never drift from
      the real box: change one, change the other. */
-  [data-cv="work"] { --cv-pad: calc(2 * clamp(4rem, 9vw, 8rem)); }
   [data-cv="capabilities"],
   [data-cv="pricing"],
   [data-cv="questions"] { --cv-pad: calc(2 * clamp(6rem, 13vw, 11rem)); }
-  [data-cv="voices"],
-  [data-cv="playground"] { --cv-pad: calc(2 * clamp(5rem, 11vw, 9rem)); }
-  [data-cv="contact"] { --cv-pad: clamp(5rem, 11vw, 9rem); }
+  [data-cv="voices"] { --cv-pad: calc(2 * clamp(5rem, 11vw, 9rem)); }
 
   /* Border-box height each section actually occupies, measured off the built
      page at the middle of every breakpoint range. These only have to be close:
      the `auto` keyword above means a section that has been laid out once is
      remembered at its true height from then on, so these values are what the
      scrollbar is built from on the very first frame and nothing else. */
-  [data-cv="work"]         { --cv: 6800px; }
   [data-cv="capabilities"] { --cv: 1330px; }
   [data-cv="pricing"]      { --cv: 1550px; }
   [data-cv="voices"]       { --cv: 950px; }
   [data-cv="questions"]    { --cv: 985px; }
-  [data-cv="playground"]   { --cv: 945px; }
-  [data-cv="contact"]      { --cv: 1130px; }
 
   @media (min-width: 640px) {
-    [data-cv="work"]         { --cv: 6950px; }
     [data-cv="capabilities"] { --cv: 1195px; }
     [data-cv="pricing"]      { --cv: 1350px; }
     [data-cv="voices"]       { --cv: 835px; }
     [data-cv="questions"]    { --cv: 895px; }
-    [data-cv="playground"]   { --cv: 910px; }
-    [data-cv="contact"]      { --cv: 990px; }
   }
   @media (min-width: 768px) {
-    [data-cv="work"]         { --cv: 7850px; }
     [data-cv="capabilities"] { --cv: 1315px; }
     [data-cv="pricing"]      { --cv: 1160px; }
     [data-cv="voices"]       { --cv: 800px; }
     [data-cv="questions"]    { --cv: 895px; }
-    [data-cv="playground"]   { --cv: 935px; }
-    [data-cv="contact"]      { --cv: 1065px; }
   }
   @media (min-width: 1024px) {
-    [data-cv="work"]         { --cv: 4500px; }
     [data-cv="capabilities"] { --cv: 1350px; }
     [data-cv="pricing"]      { --cv: 1200px; }
     [data-cv="voices"]       { --cv: 950px; }
     [data-cv="questions"]    { --cv: 775px; }
-    [data-cv="playground"]   { --cv: 990px; }
-    [data-cv="contact"]      { --cv: 885px; }
   }
   @media (min-width: 1280px) {
-    [data-cv="work"]         { --cv: 5250px; }
     [data-cv="capabilities"] { --cv: 1460px; }
     [data-cv="pricing"]      { --cv: 1310px; }
     [data-cv="voices"]       { --cv: 1115px; }
     [data-cv="questions"]    { --cv: 815px; }
-    [data-cv="playground"]   { --cv: 1015px; }
-    [data-cv="contact"]      { --cv: 985px; }
   }
 
   /* ==========================================================================

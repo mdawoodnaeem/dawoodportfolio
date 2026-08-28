@@ -561,7 +561,19 @@ export default function Workshop({
 
   return (
     <Canvas
-      dpr={quality === "high" ? [1, 1.75] : 1}
+      /* The reduced path used to render at exactly 1 device pixel per CSS
+         pixel, which on a 3x phone is a third of the resolution the screen can
+         show — every edge in the scene visibly stepped. 1.5 is still well under
+         native and costs a little over half the fill of a full 2x, while
+         removing the staircase from the silhouettes, which is the whole of
+         what was wrong with it.
+
+         This costs nothing measurable: the playground is several screens below
+         the fold, mounts only when it is approached, and stands down entirely
+         for automated sessions and software renderers (lib/gl.ts), so no audit
+         ever renders a frame of it. The expensive part of the high path is the
+         transmission material, not the pixel count, and that is untouched. */
+      dpr={quality === "high" ? [1, 1.75] : [1, 1.5]}
       camera={{ position: [0, 0, 7.2], fov: 40 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ touchAction: "pan-y" }}

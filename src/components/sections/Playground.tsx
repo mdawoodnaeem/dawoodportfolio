@@ -89,8 +89,10 @@ export function Playground() {
     <section
       ref={root}
       id="playground"
-      data-cv="playground"
-      className="cv relative overflow-hidden py-[clamp(5rem,11vw,9rem)]"
+      /* No containment here either: react-three-fiber sizes its drawing
+         buffer from this container, and a container whose layout has been
+         skipped reports nothing to size against. */
+      className="relative overflow-hidden py-[clamp(5rem,11vw,9rem)]"
       aria-labelledby="playground-heading"
     >
       {/* Ember bloom behind the canvas. Doing this in CSS rather than as a

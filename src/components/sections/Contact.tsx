@@ -136,8 +136,10 @@ export function Contact() {
     <footer
       ref={root}
       id="contact"
-      data-cv="contact"
-      className="cv relative scroll-mt-24 pt-[clamp(5rem,11vw,9rem)]"
+      /* Not contained: the signature's drift is a scrubbed timeline measured
+         against this footer, and a skipped section reports its placeholder
+         height rather than its real one. */
+      className="relative scroll-mt-24 pt-[clamp(5rem,11vw,9rem)]"
     >
       <div className="shell">
         <div data-reveal>
