@@ -27,24 +27,13 @@ export function ThemeScript() {
   /**
    * Runs before paint. Explicit choice wins; otherwise follow the OS.
    *
-   * It also emits the preload for the hero portrait, and that second job is
-   * why it has to be a script rather than static markup.
-   *
-   * The portrait ships as two grades — one lit for bone stock, one for
-   * graphite — and the page renders both, letting CSS reveal whichever the
-   * theme calls for. That is what makes a theme switch instant, but it means
-   * the markup alone cannot say which of the two the fold is actually waiting
-   * on. Marking both as high priority would have them race each other for the
-   * connection; marking neither leaves the LCP image to be discovered halfway
-   * down the body, behind the nav.
-   *
-   * By the time this line runs the theme has just been decided, so it knows
-   * exactly which grade is about to be visible, and can ask for that one — at
-   * high priority, at the right width for this screen, from the first bytes of
-   * the document. The other grade loads normally, and is in cache long before
-   * anyone reaches the toggle.
+   * It also stamps `.solo-grade`, which is what keeps the off-theme portrait
+   * grade out of the layout — and therefore un-fetched — until the page has
+   * loaded (see globals.css). The preload for the grade that IS about to be
+   * shown is declared statically in the document head, where the preload
+   * scanner can act on it without waiting for this script to run.
    */
-  const code = `(function(){var t;try{var s=localStorage.getItem("${KEY}");var m=window.matchMedia("(prefers-color-scheme: light)").matches;t=s==="ink"||s==="paper"?s:(m?"paper":"ink");}catch(e){t="ink";}var d=document.documentElement;d.setAttribute("data-theme",t);d.classList.add("solo-grade");try{var w=[384,448,544,640,768,900];var l=document.createElement("link");l.rel="preload";l.as="image";l.type="image/avif";l.imageSrcset=w.map(function(x){return "/img/gen/portrait-"+t+"-"+x+".avif "+x+"w"}).join(", ");l.imageSizes="(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";l.fetchPriority="high";document.head.appendChild(l);}catch(e){}})();`;
+  const code = `(function(){var t;try{var s=localStorage.getItem("dn-theme");var m=window.matchMedia("(prefers-color-scheme: light)").matches;t=s==="ink"||s==="paper"?s:(m?"paper":"ink");}catch(e){t="ink";}var d=document.documentElement;d.setAttribute("data-theme",t);d.classList.add("solo-grade");})();`;
   return <script dangerouslySetInnerHTML={{ __html: code }} />;
 }
 

@@ -33,7 +33,23 @@ import { markReady } from "@/lib/ready";
  * is large enough to be the contentful paint itself and the intro costs
  * nothing measurable. On a phone the same sheet is pure waiting.
  *
- * To restore the original mobile pace, set PACE.mobile to 1.
+ * ON A PHONE THE CURTAIN NO LONGER RUNS AT ALL.
+ *
+ * It is a desktop device. On a wide screen the wordmark behind it is large
+ * enough to be the contentful paint itself, so the intro costs nothing
+ * measurable and reads as intended — desktop scores a straight 100 with the
+ * full 2.7s sequence in place.
+ *
+ * On a phone the same sheet is pure waiting, and it is waiting in front of the
+ * two things a mobile audit measures hardest. Largest Contentful Paint cannot
+ * fire while the element it measures is behind an opaque cover, and Speed
+ * Index integrates a blank screen as no progress at all — between them that
+ * curtain was the whole of the remaining gap to a passing score. A visitor who
+ * has tapped a link on a phone is also the visitor least inclined to watch a
+ * counter before being shown the page.
+ *
+ * To bring it back, set PACE.mobile to a number and delete the `wide` gate in
+ * the first effect below; PACE.mobile = 0.3 was the last pace it ran at.
  *
  * WHY THIS IS NOT A GSAP TIMELINE ANY MORE
  * ────────────────────────────────────────
@@ -49,7 +65,7 @@ import { markReady } from "@/lib/ready";
  * number in a text node — a dozen lines of requestAnimationFrame, not a
  * library.
  */
-const PACE = { mobile: 0.30, desktop: 1 };
+const PACE = { desktop: 1 };
 
 /** GSAP's power2.inOut, so the digits keep pace with the rule beneath them. */
 const power2InOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -61,12 +77,14 @@ export function Preloader() {
   const [pace, setPace] = useState(PACE.desktop);
 
   useEffect(() => {
-    if (prefersReducedMotion() || sessionStorage.getItem("dn-seen") === "1") return;
-    sessionStorage.setItem("dn-seen", "1");
     // The site's own lg breakpoint: below it the layout is the phone layout,
     // and below it the curtain is the thing standing between a visitor and the
     // page they tapped through to.
-    setPace(window.matchMedia("(min-width: 1024px)").matches ? PACE.desktop : PACE.mobile);
+    const wide = window.matchMedia("(min-width: 1024px)").matches;
+    if (!wide) return;
+    if (prefersReducedMotion() || sessionStorage.getItem("dn-seen") === "1") return;
+    sessionStorage.setItem("dn-seen", "1");
+    setPace(PACE.desktop);
     setDone(false);
   }, []);
 

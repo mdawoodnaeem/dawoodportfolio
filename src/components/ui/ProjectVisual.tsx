@@ -547,11 +547,12 @@ export function ProjectVisual({
     let raf = 0;
     let t = 0;
     let sized = false;
-    // "live" means this diagram is on screen and has drawn at least once.
-    // It is not the same as `raf`: a reduced-motion visitor gets one static
-    // frame and no loop at all, and that frame still has to be repainted when
-    // the theme changes underneath it.
-    let live = false;
+    // `drawn` means this diagram has put a correct frame on its canvas. It is
+    // deliberately separate from `raf`: a diagram can be drawn and still, and a
+    // reduced-motion visitor only ever gets the still frame. Anything that
+    // invalidates the picture — a resize, a theme change — repaints only if
+    // there is already a picture to repaint.
+    let drawn = false;
     let palette: Palette = { ink: "rgba(0,0,0,.6)", faint: "rgba(0,0,0,.14)", accent: "#ff5a1f" };
 
     const syncTheme = () => {
@@ -583,6 +584,20 @@ export function ProjectVisual({
       paint();
     };
 
+    // Draw a still frame as soon as this diagram is anywhere near the fold —
+    // a screen and a half of warning — independently of the animate signal.
+    // This is the guarantee that a panel is never seen holding a blank canvas:
+    // however fast the scroll, the picture is already there, and the frame loop
+    // is a separate decision made by the `active` prop below.
+    const nearIO = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        nearIO.disconnect();
+        prime();
+      },
+      { rootMargin: "150% 0px 150% 0px" }
+    );
+
     /* The loop is started and stopped by the `active` effect below rather
        than run permanently with an early return inside it.
     
@@ -593,19 +608,24 @@ export function ProjectVisual({
        forced layouts and seven full vector passes landing inside hydration.
        Now nothing is measured or drawn until a panel is genuinely near the
        viewport, and the frame callback stops existing the moment it leaves. */
-    const start = () => {
-      if (live) return;
-      live = true;
+    /** One correct still frame. Cheap, idempotent, and never starts a loop. */
+    const prime = () => {
+      if (drawn) return;
       syncTheme();
       // First frame at t = 0.6 so a diagram that has just scrolled into view
       // opens on a settled composition rather than on its zero state.
       if (!t) t = 0.6;
       paint();
-      if (!reduced) raf = requestAnimationFrame(loop);
+      drawn = sized;
     };
 
+    const start = () => {
+      prime();
+      if (!reduced && !raf) raf = requestAnimationFrame(loop);
+    };
+
+    /** Stops the animation. The frame already on the canvas stays there. */
     const stop = () => {
-      live = false;
       if (!raf) return;
       cancelAnimationFrame(raf);
       raf = 0;
@@ -613,14 +633,53 @@ export function ProjectVisual({
 
     engine.current = { start, stop };
 
+    // The canvas measures its own box before it can draw, so it must redraw
+    // whenever that box changes. It also draws here the first time it is given
+    // a real size while already live — the belt to the IntersectionObserver's
+    // braces. If a scroll ever outruns the observer, this is what guarantees
+    // the panel is never left showing an unsized, undrawn canvas.
     const ro = new ResizeObserver(() => {
       sized = false;
-      if (live) paint();
+      if (drawn) paint();
     });
     ro.observe(cv);
+    nearIO.observe(cv);
+
+    // Belt, braces, and a spare set of braces: draw the still frame in the
+    // browser's first idle slot regardless of where the page is scrolled.
+    //
+    // The observer above gives a screen and a half of warning, which is ample
+    // for any human scroll — but "ample for any human scroll" is a claim about
+    // input speed, and a blank panel is too ugly a failure to leave resting on
+    // one. Idle time is after first paint and after LCP, so this costs the
+    // load nothing, and it means that within a couple of seconds of arriving
+    // every diagram on the page is already drawn no matter what the visitor
+    // does next. The frame loop is still a separate decision.
+    const idler = window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    // One frame after mount — after the browser has painted, before a human
+    // could possibly have scrolled. Priming is a measure and a single vector
+    // pass, not a loop, and doing it here rather than on an idle slot removes
+    // the last window in which a fast flick could reach a panel whose drawing
+    // had not been made yet. The frame loop is still gated on `active`.
+    const idle = idler.requestIdleCallback
+      ? idler.requestIdleCallback(() => prime(), { timeout: 120 })
+      : window.setTimeout(() => prime(), 60);
+    const firstFrame = requestAnimationFrame(() => prime());
+
+    // And on the very first scroll, whichever comes sooner. The idle slot
+    // above covers a visitor who arrives and reads; this covers the one who
+    // arrives and immediately throws the page. It fires before any observer
+    // can report an intersection, costs one listener that removes itself, and
+    // closes the only window in which a panel could be reached before its
+    // drawing exists.
+    const onFirstScroll = () => prime();
+    window.addEventListener("scroll", onFirstScroll, { passive: true, once: true });
 
     const mo = new MutationObserver(() => {
-      if (!live) return; // off-screen diagrams re-read the palette when they start
+      if (!drawn) return; // undrawn diagrams read the palette when they start
       syncTheme();
       paint();
     });
@@ -629,6 +688,11 @@ export function ProjectVisual({
     return () => {
       stop();
       engine.current = null;
+      if (idler.cancelIdleCallback) idler.cancelIdleCallback(idle);
+      else clearTimeout(idle);
+      cancelAnimationFrame(firstFrame);
+      window.removeEventListener("scroll", onFirstScroll);
+      nearIO.disconnect();
       ro.disconnect();
       mo.disconnect();
     };

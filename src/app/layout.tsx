@@ -79,6 +79,12 @@ const sans = localFont({
   fallback: ["Archivo Fallback", "system-ui", "sans-serif"],
 });
 
+/** Kept in step with PORTRAIT_WIDTHS/PORTRAIT_SIZES in ui/Portrait.tsx. */
+const PORTRAIT_SRCSET = (grade: "ink" | "paper") =>
+  [384, 448, 544, 640, 768, 900].map((w) => `/img/gen/portrait-${grade}-${w}.avif ${w}w`).join(", ");
+const PORTRAIT_SIZES =
+  "(min-width: 1280px) 384px, (min-width: 1024px) 352px, (min-width: 390px) 304px, 78vw";
+
 const url = "https://dawood.dev";
 
 export const metadata: Metadata = {
@@ -130,6 +136,41 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Blocking: stamps data-theme before first paint so there is no flash. */}
         <ThemeScript />
+        {/*
+          The hero portrait, preloaded by the parser rather than by a script.
+
+          These used to be emitted by the inline theme script, which is why
+          PSI reported a 370ms "resource load delay" on the LCP image: a
+          script-injected <link> cannot be seen by the preload scanner, so the
+          request could not begin until the document had been parsed and the
+          script had run. Declared statically the scanner finds them in the
+          first bytes of the response and the image starts immediately.
+
+          `media` is what keeps it to one grade. The scanner honours it, so a
+          dark-mode visitor fetches only the ink grade and a light-mode visitor
+          only the paper one — the same single-grade behaviour the theme script
+          was arranging, half a second earlier. (A returning visitor who has
+          explicitly toggled against their OS preference gets the other grade
+          the ordinary way; it is one request, not a wasted one.)
+        */}
+        <link
+          rel="preload"
+          as="image"
+          type="image/avif"
+          media="(prefers-color-scheme: dark)"
+          imageSrcSet={PORTRAIT_SRCSET("ink")}
+          imageSizes={PORTRAIT_SIZES}
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          type="image/avif"
+          media="(prefers-color-scheme: light)"
+          imageSrcSet={PORTRAIT_SRCSET("paper")}
+          imageSizes={PORTRAIT_SIZES}
+          fetchPriority="high"
+        />
         {/* The grain tile is a CSS background, so the browser cannot see it
             until the stylesheet has been parsed and the layer is laid out —
             by which point it is competing with the hero portrait for the same
